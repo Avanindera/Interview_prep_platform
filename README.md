@@ -1,121 +1,147 @@
-# AI-Powered Interview & Placement Platform (Phase 1)
+# 🎙️ AI Technical & Speech Interview Platform (v2.0)
 
-A clean, full-stack interview preparation and practice platform designed for engineering candidates. Built with **FastAPI** on the backend and **Streamlit** on the frontend, using **SQLite** with **SQLAlchemy ORM** and **Alembic** migrations.
-
----
-
-## 🌟 Key Features
-
-- **JWT Authentication**: Secure user registration, login, and token-based protected endpoints.
-- **Student Profile**: Manage academic details, CGPA, graduation year, phone, LinkedIn, and GitHub links.
-- **Resume Management**: Upload, inspect metadata, and delete candidate resumes.
-- **Curated Subjects & Topics**: Explore interview subjects (Python, DBMS, Java, DSA) and specific sub-topics.
-- **Interview Simulation**:
-  - Start an interview session with targeted questions.
-  - Interactive multi-line answer submission per question.
-  - Question navigation and answer tracking.
-  - Formal interview completion with timestamp recording.
-- **Interview History**: Review past sessions, questions asked, and candidate answers.
-- **Candidate Dashboard**: Real-time metrics on completed interviews, active sessions, and questions answered.
-- **Automated Development Seeding**: Automatically seeds a test candidate account, subjects, topics, and interview questions on startup.
+An enterprise-grade, full-stack AI interview preparation web application integrating a **Tier-2 Dual-Source RAG Pipeline** with an **Adaptive Follow-Up Question Engine** and an **AI Communication & Speech Fluency Evaluation System**.
 
 ---
 
-## 🛠️ Tech Stack
+## 🏗️ Architecture & Project Structure
 
-- **Backend**: FastAPI, Pydantic v2, Python-JOSE (JWT), PBKDF2-HMAC-SHA256 password hashing
-- **Database**: SQLite, SQLAlchemy 2.0, Alembic
-- **Frontend**: Streamlit, Requests
-- **Server**: Uvicorn
-
----
-
-## 📁 Project Structure
+The project has been restructured into a clean, modular layout separating the **Backend**, **Frontend**, **Upload Storage**, and **Research & Documentation**:
 
 ```text
-├── alembic/                # Database migration scripts
-│   ├── versions/           # Migration revisions
-│   └── env.py              # Migration environment
-├── app/                    # FastAPI Backend
-│   ├── core/               # Configuration, security, dependencies
-│   ├── database/           # DB engine, base, seed script
-│   ├── models/             # SQLAlchemy ORM models
-│   ├── routers/            # API endpoints (/api/v1/)
-│   ├── schemas/            # Pydantic request/response schemas
-│   └── main.py             # FastAPI entrypoint & router mounts
-├── frontend/               # Streamlit Frontend
-│   ├── api_client.py       # Backend REST API client
-│   └── app.py              # Streamlit interactive UI
-├── tests/                  # Automated integration tests
-│   └── test_flow.py        # 14-step end-to-end test suite
-├── uploads/                # Resume storage directory
-├── alembic.ini             # Alembic configuration
-├── requirements.txt        # Pinned Python dependencies
-└── README.md
+interview web app/
+├── backend/                               # FastAPI Application Core & Services
+│   ├── app/
+│   │   ├── core/                          # Environment config, JWT security, auth dependencies
+│   │   ├── database/                      # SQLAlchemy database engine, base models, initial seed
+│   │   ├── ml_models/                     # Trained ML model (interview_classifier.pkl)
+│   │   ├── models/                        # ORM models (User, InterviewSession, Question, Answer)
+│   │   ├── rag/                           # Dual-Source RAG Engine
+│   │   │   ├── interviewer/               # Gemini AI prompt engine, evaluator, follow-up engine
+│   │   │   ├── offline_db/                # Offline FAISS vector knowledge store (DSA, System Design)
+│   │   │   ├── repo_cache/                # Cached repositories for GitHub retrieval
+│   │   │   └── sources/                   # OfflineStore, GitHubRetriever, GFGRetriever, CacheManager
+│   │   ├── routers/                       # REST API endpoints (interviews, auth, dashboard, etc.)
+│   │   ├── schemas/                       # Pydantic v2 data validation schemas
+│   │   ├── services/                      # Business logic layer
+│   │   │   ├── rag_service.py             # RAG retrieval and question synthesis
+│   │   │   ├── speech_service.py          # Multimodal Gemini STT, linguistic features, ML classifier
+│   │   │   └── evaluation_service.py      # Unified dual evaluation orchestrator
+│   │   └── main.py                        # FastAPI entry point & lifespan manager
+│   ├── alembic/                           # Database migration versions
+│   ├── alembic.ini                        # Alembic configuration
+│   └── tests/                             # Unit & integration tests
+│
+├── frontend/                              # Streamlit Frontend Web Application
+│   ├── app.py                             # Interactive Streamlit Web UI
+│   └── api_client.py                      # REST API client library communicating with backend
+│
+├── uploads/                               # Centralized file storage
+│   ├── audio/                             # Spoken voice recordings from candidate answers
+│   └── resumes/                           # Uploaded candidate resumes
+│
+├── docs_and_research/                     # Archived research materials & notebooks
+│   └── rag_demo_and_experiments/          # Technical architecture PDFs, SMOTE, Logistic Regression
+│
+├── .env                                   # Unified environment variables
+├── .env.example                           # Example environment template
+├── requirements.txt                       # Unified Python dependencies
+├── run_platform.py                        # Python all-in-one background runner
+├── start_platform.bat                     # 1-Click launcher for both backend & frontend
+├── run_backend.bat                        # 1-Click launcher for FastAPI backend
+├── run_frontend.bat                       # 1-Click launcher for Streamlit frontend
+├── test_integrated_flow.py                # Automated end-to-end integration test suite
+└── README.md                              # Complete platform documentation
 ```
 
 ---
 
-## ⚡ Default Test Credentials
+## 🎯 Key Pipelines & Features
 
-For quick local testing, the following test account is automatically seeded into the database:
+### 1. RAG Interview Pipeline & Flow
+- **Tier-1 Offline Vector Knowledge Base**: Instant cosine similarity matching using FAISS and `all-MiniLM-L6-v2` embeddings over local curated topic databases.
+- **Tier-2 Online Discovery Fallback**: Automatically discovers and cross-synthesizes candidate questions from GitHub technical interview repositories and GeeksforGeeks articles using Google Gemini.
+- **Dynamic Topic Generation**: Candidates can type any technical topic (e.g. *"Breadth First Search and Graph Traversal"*, *"Distributed Cache Invalidation"*), generating grounded questions in real time.
 
-- **Email**: `test@example.com`
+### 2. Adaptive Follow-Up Question Flow (Interview-Grade Sequence)
+- **Natural Conversation Flow**: When a candidate answers a question, the platform does not merely display a scorecard; it transitions seamlessly to the **Follow-Up Question as the next interview turn**.
+- **Context-Bound Probe**: The follow-up question is derived directly from the candidate's answer and detected technical misconceptions (e.g., confusing a Queue with a Stack in BFS) or poses advanced architectural deep dives if answered correctly.
+- **Dual Input Format for Follow-Ups**:
+  - 🎤 **Spoken Voice Answer**: Candidates can answer follow-up questions directly with their microphone or audio upload, automatically transcribed using Google Gemini Multimodal Audio STT (with local Whisper fallback).
+  - ✍️ **Typed Written Answer**: Candidates can also provide typed technical explanations.
+- **Instant Stepper & Review**: Clear navigation pills indicate `Step 1: Main Question` vs `Step 2: Adaptive Follow-Up`, with convenient collapsible references to previous responses.
+
+### 3. Speech & Communication Analysis Pipeline
+- **Linguistic Diagnostics**: Extracts filler word density (`um`, `uh`, `like`), hedging phrases (`I think`, `maybe`), technical keyword density, and lexical diversity (type-token ratio).
+- **ML Delivery Classifier**: Uses a pre-trained scikit-learn classifier (`interview_classifier.pkl`) to evaluate confidence and verbal delivery fluency (`GOOD` vs `NEEDS_IMPROVEMENT`).
+- **Constructive Coaching**: Delivers targeted verbal coaching tips alongside technical rubric scores.
+
+---
+
+## 🚀 How to Run the Project
+
+### Prerequisites
+- Python 3.11 or Python 3.13 installed on your system.
+- An internet connection for Gemini AI calls and online RAG synthesis.
+- Ensure your Gemini API Key is set in `.env` (`GEMINI_API_KEY=...`).
+
+---
+
+### Method 1: 1-Click Unified Platform Launcher (Recommended)
+
+Simply double-click:
+```cmd
+start_platform.bat
+```
+*Or run via command line from the project root:*
+```cmd
+python run_platform.py
+```
+This launcher automatically:
+1. Cleans up ports `8000` and `8501` if already in use.
+2. Starts the **FastAPI Backend** on `http://127.0.0.1:8000`.
+3. Starts the **Streamlit Web App** on `http://localhost:8501`.
+4. Opens both in unified real-time output.
+
+---
+
+### Method 2: Running Backend & Frontend in Separate Terminals
+
+#### Terminal 1 — Backend API:
+```cmd
+run_backend.bat
+```
+*Or manually:*
+```cmd
+cd backend
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+- API Base: `http://127.0.0.1:8000`
+- Interactive Swagger Documentation: `http://127.0.0.1:8000/docs`
+
+#### Terminal 2 — Streamlit Frontend:
+```cmd
+run_frontend.bat
+```
+*Or manually:*
+```cmd
+python -m streamlit run frontend/app.py --server.port 8501
+```
+- Web Application: `http://localhost:8501`
+
+---
+
+### Method 3: Automated End-to-End Integration Test
+
+To verify that Authentication, Dynamic RAG question generation, Candidate Answer evaluation, Adaptive Follow-up question generation, and Follow-up feedback are all operating properly, run:
+```cmd
+python test_integrated_flow.py
+```
+
+---
+
+## 🔑 Default Credentials
+
+- **Test Email**: `test@example.com`
 - **Password**: `Test@12345`
-
-*(The Streamlit frontend also provides a 1-click **"⚡ Quick Fill Test Account"** button on the sign-in screen).*
-
----
-
-## 🚀 How to Run
-
-### 1. Clone the Repository & Set Up Virtual Environment
-
-```bash
-git clone https://github.com/Avanindera/Interview_prep_platform.git
-cd Interview_prep_platform
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows (PowerShell):
-.\venv\Scripts\Activate.ps1
-
-# On Linux / macOS:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Run Database Migrations
-
-```bash
-alembic upgrade head
-```
-
-### 3. Start the Backend (Terminal 1)
-
-```bash
-uvicorn app.main:app --reload
-```
-
-- **Backend API**: http://127.0.0.1:8000
-- **Interactive Swagger Docs**: http://127.0.0.1:8000/docs
-
-### 4. Start the Frontend (Terminal 2)
-
-```bash
-streamlit run frontend/app.py
-```
-
-- **Streamlit App**: http://localhost:8501
-
-### 5. Run Automated Verification Tests (Optional)
-
-With the backend running, execute:
-
-```bash
-python tests/test_flow.py
-```
+*(Or click **Register** in the sidebar to create a personal candidate profile).*

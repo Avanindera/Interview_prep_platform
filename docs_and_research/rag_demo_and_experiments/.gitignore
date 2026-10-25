@@ -1,0 +1,15 @@
+# Environment & API keys
+.env
+
+# Cache directory for downloaded GitHub repositories
+repo_cache/
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.idea/
+.vscode/

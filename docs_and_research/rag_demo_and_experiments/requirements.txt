@@ -1,0 +1,5 @@
+requests
+sentence-transformers
+faiss-cpu
+google-genai
+python-dotenv

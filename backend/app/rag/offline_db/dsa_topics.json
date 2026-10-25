@@ -1,0 +1,117 @@
+[
+  {
+    "topic": "Breadth First Search (BFS)",
+    "category": "Data Structures & Algorithms - Graphs & Trees",
+    "aliases": ["BFS", "breadth first search", "level order traversal", "shortest path unweighted graph"],
+    "summary": "BFS is a graph/tree traversal algorithm that explores all vertices at the current depth level before moving on to vertices at the next depth level.",
+    "key_concepts": [
+      "Uses a FIFO Queue (First-In, First-Out) data structure to manage visited order.",
+      "Requires a 'visited' set or array in graphs to avoid infinite cycles.",
+      "Guarantees the shortest path in unweighted graphs because nodes are discovered in increasing order of distance from the source.",
+      "Time Complexity: O(V + E) where V is vertices and E is edges.",
+      "Space Complexity: O(V) for the queue and visited set.",
+      "Common mistake: Using a Stack instead of a Queue transforms BFS into Depth-First Search (DFS) and loses shortest path guarantees.",
+      "Level-by-level processing pattern: int size = queue.size() loop within while(!queue.isEmpty())."
+    ],
+    "interview_questions": [
+      {
+        "question": "How does Breadth-First Search (BFS) guarantee finding the shortest path in an unweighted graph, and which core data structure enables this property?",
+        "ideal_answer": "BFS guarantees finding the shortest path in an unweighted graph because it explores all vertices level-by-level in non-decreasing order of their distance from the starting node. It achieves this using a FIFO Queue (First-In First-Out) data structure. When a node at distance 'd' is dequeued, all its unvisited neighbors at distance 'd + 1' are appended to the back of the queue, ensuring that no node at distance 'd + 1' is visited before all nodes at distance 'd' have been processed."
+      },
+      {
+        "question": "What happens if you replace the FIFO Queue in a standard BFS algorithm with a LIFO Stack, and why does this alter the traversal behavior?",
+        "ideal_answer": "Replacing the FIFO Queue with a LIFO Stack changes the order of node expansion from breadth-first (level-by-level) to depth-first (exploring as deep as possible along each branch before backtracking). As a result, the traversal becomes Depth-First Search (DFS), and it loses the guarantee of finding the shortest path in an unweighted graph."
+      }
+    ],
+    "common_misconceptions": [
+      "Thinking BFS uses recursion or a Stack (DFS uses recursion/stack; BFS uses an iterative Queue).",
+      "Forgetting to mark nodes as visited when enqueuing, leading to duplicate nodes and exponential queue explosion."
+    ]
+  },
+  {
+    "topic": "Dijkstra's Algorithm (Shortest Path)",
+    "category": "Data Structures & Algorithms - Graph Algorithms",
+    "aliases": ["dijkstra", "dijkstra algorithm", "dijkstra's algorithm", "shortest path weighted graph", "single source shortest path"],
+    "summary": "Dijkstra's Algorithm finds the shortest path from a single source vertex to all other vertices in a weighted graph with non-negative edge weights.",
+    "key_concepts": [
+      "Greedy strategy: always expands the unvisited vertex with the currently known minimum tentative distance.",
+      "Core Data Structure: Min-Heap / Priority Queue (stores pairs of (distance, vertex)).",
+      "Edge Relaxation: If dist[u] + weight(u, v) < dist[v], then dist[v] = dist[u] + weight(u, v) and push (dist[v], v) into the Min-Heap.",
+      "Time Complexity: O((V + E) log V) using a binary heap / priority queue, or O(V^2) with an adjacency matrix.",
+      "Space Complexity: O(V + E) for graph storage and Min-Heap.",
+      "CRITICAL CONSTRAINT: Dijkstra does NOT work correctly with negative edge weights or negative cycles (use Bellman-Ford instead)."
+    ],
+    "interview_questions": [
+      {
+        "question": "Explain how Dijkstra's algorithm finds the shortest path in a weighted graph using a Min-Heap. Why does it fail when negative edge weights are present?",
+        "ideal_answer": "Dijkstra's algorithm initializes source distance to 0 and all other vertices to infinity. It pushes (0, source) into a Min-Priority Queue. In each step, it pops the vertex u with the smallest known distance, marks it settled/visited, and relaxes all adjacent edges (u, v): if dist[u] + weight(u, v) < dist[v], dist[v] is updated and (dist[v], v) is pushed to the priority queue. It fails with negative weights because its greedy invariant assumes that once a vertex is popped from the min-heap, its shortest distance is finalized and cannot be reduced by any future path."
+      }
+    ],
+    "common_misconceptions": [
+      "Assuming Dijkstra works with negative edge weights (greedy choice breaks because a longer positive path could later take a large negative edge).",
+      "Using standard BFS on weighted graphs (BFS only works for unweighted graphs or uniform weights)."
+    ]
+  },
+  {
+    "topic": "Depth First Search (DFS)",
+    "category": "Data Structures & Algorithms - Graphs & Trees",
+    "aliases": ["DFS", "depth first search", "backtracking graph traversal"],
+    "summary": "DFS is an algorithm for traversing or searching tree or graph data structures by exploring as far as possible along each branch before backtracking.",
+    "key_concepts": [
+      "Uses a LIFO Stack (either the implicit Call Stack via recursion or an explicit stack).",
+      "Requires visited tracking in graphs to prevent cycles.",
+      "Time Complexity: O(V + E) for adjacency list.",
+      "Space Complexity: O(V) for recursion stack."
+    ],
+    "interview_questions": [
+      {
+        "question": "Explain how Cycle Detection is performed in a Directed Graph using DFS, and what extra state is needed compared to an undirected graph?",
+        "ideal_answer": "In a directed graph, cycle detection with DFS requires tracking three states for each vertex (Unvisited, Visiting in active recursion call stack, and Visited/Completed). A cycle exists if DFS reaches a node currently in the 'Visiting' state (a back-edge)."
+      }
+    ],
+    "common_misconceptions": [
+      "Assuming DFS finds the shortest path (it finds a path, not necessarily the shortest)."
+    ]
+  },
+  {
+    "topic": "Binary Search",
+    "category": "Data Structures & Algorithms - Searching",
+    "aliases": ["binary search", "bsearch", "divide and conquer search"],
+    "summary": "Binary Search is a divide-and-conquer algorithm that finds the position of a target value within a sorted array in O(log n) time.",
+    "key_concepts": [
+      "Requires monotonic property (sorted order or monotonic predicate function).",
+      "Midpoint calculation: mid = low + (high - low) // 2 to prevent integer overflow.",
+      "Time Complexity: O(log n), Space Complexity: O(1) iterative."
+    ],
+    "interview_questions": [
+      {
+        "question": "Why is 'mid = low + (high - low) // 2' preferred over 'mid = (low + high) // 2' in Binary Search, and in what interview problems does binary search apply to non-array answer spaces?",
+        "ideal_answer": "In languages like C++ and Java, (low + high) can overflow a 32-bit signed integer when both are large. 'low + (high - low) / 2' avoids overflow. It also applies to monotonic answer spaces ('Binary Search on Answer') like finding minimum capacity or threshold."
+      }
+    ],
+    "common_misconceptions": [
+      "Off-by-one errors in while conditions and boundary updates."
+    ]
+  },
+  {
+    "topic": "Trie (Prefix Tree)",
+    "category": "Data Structures & Algorithms - Trees & Strings",
+    "aliases": ["trie", "prefix tree", "radix tree", "autocomplete data structure"],
+    "summary": "A Trie is a tree-like data structure used to store a dynamic set or associative array where the keys are usually strings, optimized for fast prefix lookup.",
+    "key_concepts": [
+      "Each node contains an array or hash map of child pointers (e.g. 26 lowercase English letters) and an isEndOfWord boolean flag.",
+      "Time Complexity: O(L) for insert, search, and startsWith operations, where L is the length of the string (independent of total words N).",
+      "Space Complexity: O(ALPHABET_SIZE * L * N) in worst case.",
+      "Trade-off: Superior to Hash Tables for prefix queries (startsWith, autocomplete, longest common prefix) and sorted lexical traversal."
+    ],
+    "interview_questions": [
+      {
+        "question": "Design a Trie supporting insert, search, and startsWith operations. Compare the lookup and memory trade-offs of a fixed-size array vs a hash map for child pointers.",
+        "ideal_answer": "A Trie node stores a boolean isEndOfWord and child links. A fixed-size array (e.g. Node* children[26]) provides O(1) instantaneous pointer lookup with zero hashing overhead, but consumes memory for unused pointers. A hash map (e.g. unordered_map<char, Node*>) allocates memory dynamically only for present branches, saving memory for sparse trees or Unicode charsets at the cost of slight hashing overhead."
+      }
+    ],
+    "common_misconceptions": [
+      "Assuming a Hash Map can efficiently perform startsWith/prefix queries in O(L) without scanning all keys."
+    ]
+  }
+]

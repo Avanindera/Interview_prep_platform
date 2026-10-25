@@ -1,0 +1,107 @@
+[
+  {
+    "topic": "Trie",
+    "category": "Dynamically Cached Online Topic",
+    "aliases": [
+      "trie"
+    ],
+    "summary": "# 28 Must-Know Trie Data Structure Interview Questions in 2026\n\n<div>\n<p align=\"center\">\n<a href=\"https://devinterview.io/questions/data-structures-and-algorithms/\">\n<img src=\"https://firebasestorage.googleapis.com/v0/b/dev-stack-app.appspot.com/o/github-blog-img%2Fdata-structures-and-algorithms-git \nd of housing data within its nodes, a Trie utilizes its edges to encode information.\n\n### Key Features\n\n- **Fast String Operations**: Tries streamline operations such as search, insert, and delete for strings, offering an edge over arrays and hash tables in specific scenarios.\n- **Efficient Prefix S \nsubsequent **child node** corresponds to a distinct character. Some nodes might denote the end of a string while simultaneously representing characters.\n\n#### Node Pointers\n\nNodes in the Trie hold references to child nodes. For instance, when dealing with the English alphabet, an array of 26 element",
+    "key_concepts": [
+      "# 28 Must-Know Trie Data Structure Interview Questions in 2026\n\n<div>\n<p align=\"center\">\n<a href=\"https://devinterview.io/questions/data-structures-and-algorithms/\">\n<img src=\"https://firebasestorage.googleapis.com/v0/b/dev-stack-app.appspot.com/o/gi",
+      "d of housing data within its nodes, a Trie utilizes its edges to encode information.\n\n### Key Features\n\n- **Fast String Operations**: Tries streamline operations such as search, insert, and delete for strings, offering an edge over arrays and hash ta",
+      "subsequent **child node** corresponds to a distinct character. Some nodes might denote the end of a string while simultaneously representing characters.\n\n#### Node Pointers\n\nNodes in the Trie hold references to child nodes. For instance, when dealing",
+      "ngth of the word.\n  - Prefix Search: $O(p)$, where $p$ is the number of words sharing the prefix.\n\n- **Space Complexity**: Roughly $O(n \\cdot \\sigma)$, where $n$ is the total word count and $\\sigma$ represents the size of the alphabet.\n\n### Code Exam"
+    ],
+    "interview_questions": [
+      {
+        "question": "Design a Trie (Prefix Tree) supporting insert, search, and startsWith operations. Compare the memory and lookup trade-offs between using a fixed-size array vs. a dynamic hash map for node pointers, and explain why a Trie is superior to a Hash Table for prefix-based operations.",
+        "ideal_answer": "1. Structure & Representation:\nA Trie is a tree-like data structure where edges encode character transitions and nodes represent prefix states. Each node contains a boolean flag (`isEndOfWord`) to mark full keys and references to child nodes.\n- Fixed Array (`children[26]`): Provides deterministic O(1) direct indexing via `char - 'a'`. Highly cache-friendly and fast, but space-inefficient ($O(N \\cdot \\sigma)$ where $\\sigma$ is alphabet size) due to null pointers for sparse nodes.\n- Dynamic Map (`Map<char, TrieNode>`): Allocates space dynamically for active children only. Ideal for large or unbounded character sets (e.g., Unicode), but introduces hash overhead and pointer dereferencing cost.\n\n2. Key Operations & Complexities:\n- `insert(word)`: Iterates characters in $m$ steps. Navigates or creates child nodes, setting `isEndOfWord = true` at the final node. Time: $O(m)$, Space: $O(m)$ worst-case for new nodes.\n- `search(word)`: Traverses nodes matching $m$ characters. Returns `true` if traversal succeeds and the final node has `isEndOfWord == true`. Time: $O(m)$, Space: $O(1)$.\n- `startsWith(prefix)`: Traverses nodes for $p$ characters. Returns `true` if the path exists regardless of `isEndOfWord`. Time: $O(p)$, Space: $O(1)$.\n\n3. Advantages Over Hash Tables:\n- Prefix Searches: Locates all keys sharing a prefix in $O(p)$ time, whereas Hash Tables require scanning all entries ($O(N \\cdot m)$).\n- No Hash Collisions: Guarantees deterministic $O(m)$ worst-case lookup without compute overhead or collision degradation.\n- Alphabetical Ordering: Supports depth-first search (DFS) traversal to output all keys in lexicographical order naturally."
+      }
+    ],
+    "common_misconceptions": []
+  },
+  {
+    "topic": "dsa",
+    "category": "Dynamically Cached Online Topic",
+    "aliases": [
+      "dsa"
+    ],
+    "summary": "<br/>\n<p align=\"center\">\n  <img src=\"https://raw.githubusercontent.com/donnemartin/interactive-coding-challenges/master/images/cover_challenge.gif\">\n</p>\n\ninteractive-coding-challenges\n============\n\n[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/donnemartin/interactive-c \n/22) to help you arrive at the optimal solution.\n\nNotebooks also detail:\n\n* Constraints\n* Test cases\n* Algorithms\n* Big-O time and space complexities\n\nAlso included are **unit tested reference implementations** of various [data structures](#reference-implementations-data-structures) and [algorithms] \n)\n\nGreat for use while on-the-go.\n\n### Design Resource: The System Design Primer\n\nLooking for resources to help you prep for the **System Design** and **Object-Oriented Design interviews**?\n\n<p align=\"center\">\n  <img src=\"http://i.imgur.com/zdCAkB3.png\">\n  <br/>\n</p>\n\nCheck out the sister repo [The ",
+    "key_concepts": [
+      "<br/>\n<p align=\"center\">\n  <img src=\"https://raw.githubusercontent.com/donnemartin/interactive-coding-challenges/master/images/cover_challenge.gif\">\n</p>\n\ninteractive-coding-challenges\n============\n\n[![Binder](https://mybinder.org/badge_logo.svg)](ht",
+      "/22) to help you arrive at the optimal solution.\n\nNotebooks also detail:\n\n* Constraints\n* Test cases\n* Algorithms\n* Big-O time and space complexities\n\nAlso included are **unit tested reference implementations** of various [data structures](#reference",
+      ")\n\nGreat for use while on-the-go.\n\n### Design Resource: The System Design Primer\n\nLooking for resources to help you prep for the **System Design** and **Object-Oriented Design interviews**?\n\n<p align=\"center\">\n  <img src=\"http://i.imgur.com/zdCAkB3.p",
+      "ster/resources/flash_cards/OO%20Design.apkg)\n\n![](https://camo.githubusercontent.com/e45e39c36eebcc4c66e1aecd4e4145112d8e88e3/687474703a2f2f692e696d6775722e636f6d2f6a6a3341354e382e706e67)\n\n## Notebook Structure\n\nEach challenge has two notebooks, a **"
+    ],
+    "interview_questions": [
+      {
+        "question": "Given an array of integers, design an optimal algorithm to find the maximum circular subarray sum, combining techniques from Kadane's algorithm and prefix/suffix array processing to handle wrap-around cases in O(N) time and O(1) space.",
+        "ideal_answer": "To solve the Maximum Circular Subarray Sum problem efficiently, we recognize that the maximum circular sum can be formed either by a standard non-wrapping subarray (found via Kadane's algorithm) or by a wrapping subarray, which equals the total sum of the array minus the minimum subarray sum. We run Kadane's algorithm twice: once to find the maximum normal subarray sum (max_sum) and once to find the minimum subarray sum (min_sum). If all numbers are negative, max_sum will naturally handle the single largest negative element. Otherwise, the optimal result is the maximum of max_sum and (total_sum - min_sum). This approach runs in O(N) time complexity using a single pass or constant passes, and requires O(1) auxiliary space, adhering strictly to asymptotic optimization principles."
+      }
+    ],
+    "common_misconceptions": []
+  },
+  {
+    "topic": "data hiding",
+    "category": "Dynamically Cached Online Topic",
+    "aliases": [
+      "data hiding"
+    ],
+    "summary": "Abstraction and data hiding are important concepts in Java used to reduce complexity and protect the internal details of a class. Abstraction focuses on hiding implementation details and exposing only the essential functionality, whereas data hiding focuses on restricting direct access to an object' \nabstract void numberOfLegs (); } class Human extends Creature { @Override void numberOfLegs () { System . out . println ( \"Human has two legs\" ); } } class Elephant extends Creature { @Override void numberOfLegs () { System . out . println ( \"Elephant has four legs\" ); } } public class Main { public \nthe process of restricting direct access to the internal data of a class. It is commonly achieved by declaring data members as private and providing controlled access through methods such as getters and setters.\n\nProvides controlled access through methods.\n\nHelps prevent unwanted modification of dat",
+    "key_concepts": [
+      "Abstraction and data hiding are important concepts in Java used to reduce complexity and protect the internal details of a class. Abstraction focuses on hiding implementation details and exposing only the essential functionality, whereas data hiding ",
+      "abstract void numberOfLegs (); } class Human extends Creature { @Override void numberOfLegs () { System . out . println ( \"Human has two legs\" ); } } class Elephant extends Creature { @Override void numberOfLegs () { System . out . println ( \"Elephan",
+      "the process of restricting direct access to the internal data of a class. It is commonly achieved by declaring data members as private and providing controlled access through methods such as getters and setters.\n\nProvides controlled access through me",
+      "\"Balance: \" + account . getBalance ()); } }\n\nExplanation: balance is declared private, so it cannot be accessed directly from outside BankAccount. The getBalance() method provides controlled read access, while deposit() controls how the balance can b"
+    ],
+    "interview_questions": [
+      {
+        "question": "Explain the conceptual and practical differences between Data Hiding and Abstraction. How does Data Hiding specifically facilitate the maintenance of 'object invariants' compared to Abstraction?",
+        "ideal_answer": "Data Hiding and Abstraction are distinct pillars of OOP. Data Hiding is the practice of restricting direct access to an object's internal data members using access modifiers (e.g., 'private'). Its primary goal is to protect the object's internal state and maintain 'object invariants'\u2014rules that must remain true for an object to be valid. For example, a BankAccount class uses data hiding on a 'balance' field to prevent external code from setting it to a negative value, forcing all changes through a validated 'deposit' method. Abstraction, meanwhile, is the process of hiding implementation details and exposing only essential functionality through interfaces or abstract classes (e.g., an ATM interface hiding the complex banking network logic). While Abstraction focuses on reducing system complexity for the user, Data Hiding focuses on security and the integrity of the object's internal data."
+      }
+    ],
+    "common_misconceptions": []
+  },
+  {
+    "topic": "DBMS",
+    "category": "Dynamically Cached Online Topic",
+    "aliases": [
+      "dbms"
+    ],
+    "summary": "# **Important Database Management System Interview Questions**\n\n> Click \u2b50 if you like the project.\n> \n> Feel free to make contribution. Pull Requests are highly appreciated.\n> \n> Follow me [@nokha_db](https://twitter.com/nokha_db) for technical updates.\n\n### Link to learn SQL commands \ud83d\udc49 [Click Here] \n14. What is denormalization?\n15. Difference between SQL and NoSQL databases.\n16. Explain different forms of normalization.\n17. When to use SQL based database?\n18. When to use NoSQL based database?\n19. Explain different types of NoSQL database.\n20. What is column oriented database?\n21. What is BCNF n \nble and View?\n37. What is schema in dbms?\n38. What are DBMS languges?\n39. Difference between HAVING and WHERE clause.\n40. What is join?\n41. What is Trigger?\n42. What is stored procedure?\n43. What is the difference between trigger and stored procedure?\n44. What is transaction in dbms?\n45. Difference ",
+    "key_concepts": [
+      "# **Important Database Management System Interview Questions**\n\n> Click \u2b50 if you like the project.\n> \n> Feel free to make contribution. Pull Requests are highly appreciated.\n> \n> Follow me [@nokha_db](https://twitter.com/nokha_db) for technical updat",
+      "14. What is denormalization?\n15. Difference between SQL and NoSQL databases.\n16. Explain different forms of normalization.\n17. When to use SQL based database?\n18. When to use NoSQL based database?\n19. Explain different types of NoSQL database.\n20. Wh",
+      "ble and View?\n37. What is schema in dbms?\n38. What are DBMS languges?\n39. Difference between HAVING and WHERE clause.\n40. What is join?\n41. What is Trigger?\n42. What is stored procedure?\n43. What is the difference between trigger and stored procedure",
+      "joins in sql.\n58. Are NULL values in sql same as blank space or zero?\n59. What happens when NULL is compared with NULL?\n60. What are the problems with Concurrent Execution in dbms?\n61. Different technique for concurrency control in dbms.\n62. What is "
+    ],
+    "interview_questions": [
+      {
+        "question": "Explain the internal mechanics of B+ Tree indexing in a relational DBMS, contrasting Clustered vs. Non-Clustered index storage architectures. How does page-level B+ Tree structure optimize I/O complexity for point and range queries, and what performance trade-offs arise during concurrent writes due to node splitting and locking?",
+        "ideal_answer": "1. B+ Tree Mechanics & I/O Complexity:\nA B+ Tree is an M-way balanced search tree optimized for block-based storage. Internal nodes store search keys and child pointers, while leaf nodes store actual data pointers or row tuples, linked sequentially via a doubly-linked list. With a high branching factor (fan-out 'f'), the tree height remains low (typically 3-4 levels), reducing lookup time complexity to O(log_f N) disk accesses. Range queries execute in O(log_f N + K/B) I/O operations by traversing to the initial leaf node and scanning horizontally across linked leaf pages.\n\n2. Clustered vs. Non-Clustered Indexes:\n- Clustered Index: Dictates the physical storage order of data records on disk. There is only one clustered index per table. Leaf nodes contain the actual data rows (or primary tuples). Range scans on clustered keys read physically contiguous disk pages, minimizing sequential read overhead.\n- Non-Clustered Index: Maintained separately from the data rows. Leaf nodes hold key values along with bookmark pointers (Row IDs or Primary Key values in systems like InnoDB) referencing the clustered index or heap file. Point lookups require a two-stage evaluation (index lookup followed by a bookmark lookup/double-traverse), leading to higher random I/O cost.\n\n3. Concurrent Write Trade-Offs & Locking Overhead:\n- Node Splitting & Merging: Inserting or updating indexed columns can trigger node splits when a leaf page exceeds capacity, propagating structural modifications up the tree (O(log_f N) work).\n- Concurrency Control & Latching: To prevent structural inconsistency during concurrent transactions, engines employ 'Latch Crabbing' (or Latch Coupling). Readers/writers acquire short-term page latches down the tree path. Structural changes force write-latches on parent nodes, creating bottleneck points and contention under high concurrent ingestion."
+      }
+    ],
+    "common_misconceptions": []
+  },
+  {
+    "topic": "wifi protocols",
+    "category": "Dynamically Cached Online Topic",
+    "aliases": [
+      "wifi protocols"
+    ],
+    "summary": "The IEEE 802.11 standard, commonly known as Wi-Fi, outlines the architecture and defines the MAC and physical layer specifications for wireless LANs (WLANs). Wi-Fi uses high-frequency radio waves instead of cables for connecting the devices in LAN. Given the mobility of WLAN nodes, they can move unr \n1e, 802.11g, 802.11n etc.\n\nImportant Terminologies of IEEE 802.11 Architecture\n\nIEEE 802.11 Architecture and Services\n\nServices provided by the WLAN\n\nFrame Format of IEEE 802.11\n\nAdvantages and Disadvantages of IEEE 802.11 Architecture\n\nApplications of IEEE 802.11 Architecture\n\nImportant Terminologi \num and distributed systems.\n\nDistribution System: A system used to interconnect a set of BSSs and integrated LANs to create an ESS.\n\nFrame: It is a MAC protocol data unit.\n\nSSID (Service Set Identifier): It\u2019s the network name for a particular WLAN . All-access points and devices on a specific WLAN m",
+    "key_concepts": [
+      "The IEEE 802.11 standard, commonly known as Wi-Fi, outlines the architecture and defines the MAC and physical layer specifications for wireless LANs (WLANs). Wi-Fi uses high-frequency radio waves instead of cables for connecting the devices in LAN. G",
+      "1e, 802.11g, 802.11n etc.\n\nImportant Terminologies of IEEE 802.11 Architecture\n\nIEEE 802.11 Architecture and Services\n\nServices provided by the WLAN\n\nFrame Format of IEEE 802.11\n\nAdvantages and Disadvantages of IEEE 802.11 Architecture\n\nApplications ",
+      "um and distributed systems.\n\nDistribution System: A system used to interconnect a set of BSSs and integrated LANs to create an ESS.\n\nFrame: It is a MAC protocol data unit.\n\nSSID (Service Set Identifier): It\u2019s the network name for a particular WLAN . ",
+      "802.11 Architecture and Services\n\nIn the year 1990, IEEE 802.11 Committee formed a new working group, the IEEE 802.11 standard which defines protocols for Wireless Local Area Networks (WLANs). Just like how Ethernet provides services for wired media,"
+    ],
+    "interview_questions": [
+      {
+        "question": "Design the logical data path and bridging mechanism for an IEEE 802.11 Wireless Access Point (AP) that connects an Infrastructure Basic Service Set (BSS) to a wired Distribution System (DS). Explain how Layer 2 frames are translated, how the SSID and MAC sublayer handle mobility across multiple BSSs to form an Extended Service Set (ESS), and how hidden node challenges or frame aggregation differ from wired Ethernet environments.",
+        "ideal_answer": "An IEEE 802.11 Access Point acts as a bridge between the wireless medium and the wired Distribution System (DS). The architecture relies on Stations (STAs) communicating via Basic Service Sets (BSS). In an Infrastructure BSS, all wireless traffic flows through the AP, which functions as a logical hub and Layer 2 bridge. When a client sends a MAC Protocol Data Unit (MPDU) to the AP, the AP strips or translates the 802.11 wireless header (which includes fields for To/From DS, receiver/transmitter, and source/destination MAC addresses) into a standard 802.3 Ethernet frame before forwarding it onto the wired network. Conversely, Ethernet frames arriving from the DS are encapsulated into 802.11 frames to be transmitted over the air to the target wireless station. To scale this across a broader enterprise environment, multiple BSSs are interconnected via the Distribution System to form an Extended Service Set (ESS), identified by a shared SSID. Unlike wired Ethernet, which uses full-duplex carrier-sense multiple access with collision detection (CSMA/CD), wireless networks utilize CSMA/CA (Collision Avoidance) alongside Request-to-Send/Clear-to-Send (RTS/CTS) exchanges to mitigate the hidden node problem, since simultaneous bi-directional collision detection is infeasible over shared radio frequency channels."
+      }
+    ],
+    "common_misconceptions": []
+  }
+]

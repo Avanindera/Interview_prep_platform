@@ -1,4 +1,4 @@
-# Python bytecode
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,18 +7,36 @@ __pycache__/
 venv/
 env/
 .venv/
+ENV/
 
-# Environment variables
+# Environment variables & secrets (CRITICAL: NEVER COMMIT API KEYS)
 .env
-.env.local
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 
-# SQLite Database
+# SQLite Databases
 *.db
+*.sqlite
 *.sqlite3
+interview_platform.db
+backend/interview_platform.db
 
-# Uploaded files
-uploads/*
-!uploads/.gitkeep
+# User Uploaded audio and resumes (Keep empty directories tracked via .gitkeep)
+uploads/audio/*
+!uploads/audio/.gitkeep
+uploads/resumes/*
+!uploads/resumes/.gitkeep
+backend/uploads/audio/*
+!backend/uploads/audio/.gitkeep
+backend/uploads/resumes/*
+!backend/uploads/resumes/.gitkeep
+
+# Research demo experiment caches & archives
+**/repo_cache/
+*.zip
 
 # IDE and Editor files
 .vscode/

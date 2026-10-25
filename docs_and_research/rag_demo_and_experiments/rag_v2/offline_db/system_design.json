@@ -1,0 +1,45 @@
+[
+  {
+    "topic": "LRU Cache (Least Recently Used)",
+    "category": "System Design & Data Structures",
+    "aliases": ["lru cache", "least recently used", "cache eviction policy", "hashmap doubly linked list"],
+    "summary": "An LRU Cache is a key-value caching data structure that evicts the least recently accessed item when capacity is exceeded, offering O(1) get and put operations.",
+    "key_concepts": [
+      "Implemented using a Hash Map + Doubly Linked List.",
+      "Hash Map provides O(1) key lookup and reference to the doubly linked list node.",
+      "Doubly Linked List provides O(1) node removal and O(1) insertion to head/tail (most recently used position).",
+      "Singly linked list cannot achieve O(1) because deleting a node requires finding its previous pointer in O(N)."
+    ],
+    "interview_questions": [
+      {
+        "question": "Explain the architecture of an LRU Cache that achieves O(1) time complexity for both get() and put() operations. Why is a singly linked list insufficient?",
+        "ideal_answer": "An LRU Cache uses a combination of a Hash Map and a Doubly Linked List. The Hash Map stores key -> Node mappings for O(1) access. The Doubly Linked List maintains access recency order (Head = Most Recently Used, Tail = Least Recently Used). When an item is accessed or added, its node is moved to the head in O(1). When capacity is full, the tail node is removed in O(1) from both the list and the hash map. A singly linked list is insufficient because deleting a node in the middle requires traversing to find its predecessor node, taking O(N) time without a backward pointer."
+      }
+    ],
+    "common_misconceptions": [
+      "Believing a simple array or Python OrderedDict/deque alone gives O(1) arbitrary access and deletion without a hash map.",
+      "Forgetting to update both the hash map and the linked list pointers on eviction or update."
+    ]
+  },
+  {
+    "topic": "Database Sharding & Partitioning",
+    "category": "System Design - Databases",
+    "aliases": ["database sharding", "sharding", "horizontal partitioning", "consistent hashing"],
+    "summary": "Sharding is horizontal partitioning of a database across multiple server instances to scale read/write throughput and storage horizontally.",
+    "key_concepts": [
+      "Horizontal Partitioning (splitting rows) vs Vertical Partitioning (splitting columns).",
+      "Shard Key selection: Range-based, Hash-based, or Directory-based.",
+      "Consistent Hashing minimizes data movement when adding/removing shard nodes (k/N keys remapped).",
+      "Trade-offs: Cross-shard joins become complex/slow, distributed transactions (2PC/Sagas) are required for multi-shard consistency."
+    ],
+    "interview_questions": [
+      {
+        "question": "What is Database Sharding, and what are the main trade-offs and architectural challenges introduced when sharding a relational database?",
+        "ideal_answer": "Database Sharding is the horizontal partitioning of database records across multiple independent database servers/instances based on a shard key. The primary challenges include: 1) Cross-shard JOIN operations, which become prohibitively expensive and require application-level stitching; 2) Distributed Transactions (requiring 2PC or Saga patterns) to maintain ACID guarantees across shards; 3) Hotspots / uneven data distribution if the shard key is poorly chosen; and 4) Re-sharding complexity when scaling clusters."
+      }
+    ],
+    "common_misconceptions": [
+      "Confusing Database Replication (copying identical data across nodes for read scale & fault tolerance) with Sharding (distributing different subsets of data across nodes for write & storage scale)."
+    ]
+  }
+]
