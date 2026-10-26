@@ -2,6 +2,8 @@
 
 An enterprise-grade, full-stack AI interview preparation web application integrating a **Tier-2 Dual-Source RAG Pipeline** with an **Adaptive Follow-Up Question Engine** and an **AI Communication & Speech Fluency Evaluation System**.
 
+> 📘 **Complete Architecture & Viva Study Guide:** For an exhaustive, step-by-step technical breakdown of the RAG pipeline, FAISS vector indexing, Gemini Multimodal STT, and the Top 15 Viva Q&A, see [`COMPLETE_PROJECT_LEARNING_GUIDE.md`](COMPLETE_PROJECT_LEARNING_GUIDE.md).
+
 ---
 
 ## 🏗️ Architecture & Project Structure
