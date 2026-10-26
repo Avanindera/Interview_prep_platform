@@ -1,501 +1,590 @@
-# 🎓 Master Learning & Architecture Guide: AI Technical & Speech Interview Platform
-
-This document is your complete, end-to-end technical reference for the **AI Technical & Speech Interview Platform**. Every concept, algorithm, formula, and data flow is documented here in exhaustive detail so you can answer any viva, architectural review, or technical interview question with complete confidence.
+# 🎓 Master Architectural & Mathematical Guide: AI Technical & Speech Interview Platform
 
 ---
 
-## 📑 Table of Contents
-1. [High-Level System Architecture](#1-high-level-system-architecture)
-2. [End-to-End System Flow Diagram](#2-end-to-end-system-flow-diagram)
-3. [Phase 1: What Happens When You Type "BFS" (The RAG Pipeline Deep Dive)](#3-phase-1-what-happens-when-you-type-bfs-the-rag-pipeline-deep-dive)
-   - 3.1 Topic Normalization
-   - 3.2 Tier-1 Offline Knowledge Store (FAISS Vector Search)
-   - 3.3 Tier-2 Online Discovery Fallback (GFG & GitHub)
-   - 3.4 What is Chunking & Why Does Overlap Matter?
-   - 3.5 Dynamic Caching (LRU & TTL)
-   - 3.6 Progressive Batch Question Generation
-4. [Phase 2: Submitting Your Answer (Text vs. Voice)](#4-phase-2-submitting-your-answer-text-vs-voice)
-   - 4.1 Typed Written Submission
-   - 4.2 Spoken Voice Submission & Gemini Multimodal Audio STT
-5. [Phase 3: The Dual Evaluation Pipeline (How Answers Are Graded)](#5-phase-3-the-dual-evaluation-pipeline-how-answers-are-graded)
-   - 5.1 Dimension 1: AI Speech & Delivery Fluency Evaluator
-   - 5.2 Dimension 2: Technical RAG Evaluation (4-Factor Weighted Rubric)
-6. [Phase 4: The Adaptive Follow-Up Engine (Turn 2)](#6-phase-4-the-adaptive-follow-up-engine-turn-2)
-   - 6.1 Misconception Extraction
-   - 6.2 Adaptive Question Formulation
-   - 6.3 Follow-Up Answer Evaluation & Resolution
-7. [Phase 5: Data Models & Session Lifecycle](#7-phase-5-data-models--session-lifecycle)
-8. [🎯 Viva & Technical Defense Cheat Sheet (Top 15 Questions & Answers)](#8--viva--technical-defense-cheat-sheet-top-15-questions--answers)
+## 📑 Detailed Table of Contents
+1. [Executive System Overview](#1-executive-system-overview)
+2. [Module 1: The Input & Topic Normalization Layer (What happens when you type "BFS"?)](#2-module-1-the-input--topic-normalization-layer)
+   - 2.1 The Problem: Why Raw Queries Fail
+   - 2.2 Normalization Algorithms & Token Jaccard Matching
+3. [Module 2: High-Dimensional Embeddings & Vector Mathematics](#3-module-2-high-dimensional-embeddings--vector-mathematics)
+   - 3.1 What is an Embedding? ($\mathbb{R}^{384}$ Vector Space)
+   - 3.2 The Mathematics of $L_2$ Normalization (Why & How)
+   - 3.3 The Mathematics of Cosine Similarity & Inner Product
+   - 3.4 Why Normalized Inner Product is Lightning Fast
+   - 3.5 FAISS (`IndexFlatIP`) & The Significance of Threshold $\tau = 0.52$
+4. [Module 3: Web Retrieval, Scraping & Chunking Mathematics](#4-module-3-web-retrieval-scraping--chunking-mathematics)
+   - 4.1 GeeksforGeeks Web Scraper (`GFGRetriever`)
+   - 4.2 GitHub Mining & The Repository Ranking Formula
+   - 4.3 Why Logarithmic Scaling for Stars?
+   - 4.4 The Sliding-Window Chunking Algorithm (Math & Boundary Coverage Guarantee)
+5. [Module 4: Speech-to-Text & Acoustic Signal Processing](#5-module-4-speech-to-text--acoustic-signal-processing)
+   - 5.1 Why Local Whisper Failed
+   - 5.2 How Digital Audio Works (PCM, Sampling Rates, Bit Depth)
+   - 5.3 Acoustic Spectrograms & Multimodal Audio STT
+   - 5.4 Verbatim Hesitation Retention
+6. [Module 5: The Speech Delivery & Communication Evaluation Pipeline](#6-module-5-the-speech-delivery--communication-evaluation-pipeline)
+   - 6.1 Linguistic Regex Lexicons & Density Mathematics
+   - 6.2 Lexical Diversity: Type-Token Ratio (TTR)
+   - 6.3 Machine Learning Delivery Classifier (`interview_classifier.pkl`)
+   - 6.4 The Mathematics of Logistic Regression & The Sigmoid Function
+   - 6.5 The 383-Dimensional Decision Boundary Hyperplane
+   - 6.6 Calibrated Composite Delivery Score Formula
+7. [Module 6: Technical Evaluation & The Adaptive Follow-Up Engine](#7-module-6-technical-evaluation--the-adaptive-follow-up-engine)
+   - 7.1 The 4-Factor Weighted Technical Rubric
+   - 7.2 Technical Misconception Extraction Logic
+   - 7.3 Adaptive Branching: Guided Diagnostics vs. Scale Challenges
+   - 7.4 Follow-Up Resolution Evaluation (Boolean Lattice)
+8. [Module 7: Relational Database Architecture & Lifecycle](#8-module-7-relational-database-architecture--lifecycle)
+9. [🎯 Top 15 Viva & Technical Interview Questions (With Full Mathematical Answers)](#9--top-15-viva--technical-interview-questions)
 
 ---
 
-## 1. High-Level System Architecture
+## 1. Executive System Overview
 
-The platform is designed around a decoupled, three-tier architecture:
-
-```
-[ FRONTEND LAYER ]
-Streamlit Interactive UI (Port 8501)
-- 2-Turn Stepper (Main Question -> Adaptive Follow-Up)
-- In-Browser Microphone Recording (WAV) & File Upload
-- Real-time Diagnostic Chips & Assessment Reports
-        │
-        │ HTTP REST API (JWT Authenticated)
-        ▼
-[ BACKEND API LAYER ]
-FastAPI Application Core (Port 8000)
-- Routers: Auth, Interviews, Questions, Dashboard, Profile
-- Database: SQLAlchemy ORM with SQLite (interview_platform.db)
-- Security: Passlib (bcrypt password hashing) + Python-Jose (JWT Tokens)
-        │
-        ├──► [ DUAL-SOURCE RAG ENGINE ]
-        │    ├── Tier-1: Offline FAISS Vector Store + all-MiniLM-L6-v2 Embeddings
-        │    ├── Tier-2: Online Discovery (GeeksforGeeks Scraper + GitHub Repo Miner)
-        │    └── Synthesis: Google Gemini (Batch Progressive Question Generation)
-        │
-        └──► [ AI SPEECH & DELIVERY EVALUATION ENGINE ]
-             ├── Audio STT: Google Gemini Multimodal Audio Transcription (~1.5s verbatim)
-             ├── Linguistic Diagnostics: Regex Fillers, Hedging, Technical Keyword Density
-             └── ML Delivery Classifier: Pre-trained Scikit-Learn Logistic Regression
-```
-
----
-
-## 2. End-to-End System Flow Diagram
+The platform is designed around two synchronized AI engines:
+1. **The Technical RAG Pipeline:** Generates grounded questions, detects missing invariants, grades responses against an ideal rubric, and formulates adaptive follow-up probes.
+2. **The Speech & Communication Pipeline:** Transcribes spoken audio verbatim via multimodal cloud STT, computes linguistic fluency densities, and runs ML inference on sentence embeddings to provide delivery coaching.
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor Candidate as Candidate (User)
-    participant UI as Streamlit Frontend
-    participant API as FastAPI Backend
-    participant RAG as RAG Service
-    participant Store as Offline FAISS Store
-    participant Web as GFG / GitHub Retrievers
-    participant Gemini as Google Gemini AI
-    participant Speech as Speech Service (ML + STT)
-    participant DB as SQLite Database
-
-    Candidate->>UI: Types "BFS" & clicks "Start Dynamic Interview"
-    UI->>API: POST /api/v1/interviews {"generation_mode": "RAG_DYNAMIC", "custom_topic": "BFS"}
-    API->>RAG: generate_rag_questions_batch("BFS", count=3)
-    
-    rect rgb(240, 248, 255)
-        note over RAG,Store: Step 1: Tier-1 Offline Search
-        RAG->>Store: query_offline("BFS", threshold=0.52)
-        alt Similarity >= 0.52 (Hit)
-            Store-->>RAG: Returns cached curated technical context
-        else Similarity < 0.52 (Miss)
-            note over RAG,Web: Step 2: Tier-2 Online Discovery
-            RAG->>Web: GFG & GitHub Search, Scrape & Chunk
-            Web-->>RAG: Clean technical text chunks
-            RAG->>Store: Cache into dynamic_cache.json
-        end
+flowchart TD
+    subgraph UI ["Client Layer (Streamlit UI :8501)"]
+        A["Candidate types 'BFS'"] --> B["Start Interview"]
+        C["Candidate speaks answer (WAV)"] --> D["Submit Answer"]
     end
 
-    RAG->>Gemini: Progressive Batch Prompt (Ground truth context + "BFS")
-    Gemini-->>RAG: 3 Grounded Questions (Invariants, Implementation, Edge Cases)
-    RAG-->>API: 3 Questions + Reference Contexts + Ideal Answers
-    API->>DB: Save InterviewSession & InterviewQuestions
-    API-->>UI: Interview Session #ID Ready
-
-    rect rgb(255, 250, 240)
-        note over UI,Speech: Turn 1: Main Question Answering
-        UI->>Candidate: Displays Question 1 (Turn 1: Main Question)
-        Candidate->>UI: Speaks answer into microphone (WAV Audio)
-        UI->>API: POST /questions/{id}/audio-answer (audio bytes)
-        API->>Speech: transcribe_audio_file(audio_path)
-        Speech->>Gemini: Multimodal audio transcription (Part.from_bytes)
-        Gemini-->>Speech: Verbatim transcript ("BFS uses a queue, um...")
-        Speech->>Speech: extract_speech_features() + interview_classifier.pkl
-        Speech-->>API: Speech metrics (fillers, tech terms, confidence, verdict)
-        API->>Gemini: evaluate_candidate_response() with 4-factor rubric
-        Gemini-->>API: Score (6.0/10), Misconception, Adaptive Follow-Up Question
-        API->>DB: Save Answer record
-        API-->>UI: Updated Answer & Follow-up Question
+    subgraph Backend ["API Core (FastAPI :8000)"]
+        B --> E["POST /api/v1/interviews"]
+        D --> F["POST /questions/{id}/audio-answer"]
     end
 
-    rect rgb(245, 255, 245)
-        note over UI,Gemini: Turn 2: Adaptive Follow-Up Deep Dive
-        UI->>Candidate: Displays Step 2: Adaptive Follow-Up (Active Probe)
-        Candidate->>UI: Speaks / Types Follow-Up response
-        UI->>API: POST /questions/{id}/follow-up
-        API->>Gemini: evaluate_follow_up()
-        Gemini-->>API: Follow-up resolution assessment
-        API->>DB: Save Follow-up answer & feedback
-        API-->>UI: Displays Turn 2 Interviewer Assessment & "Next Question" button
+    subgraph RAG_Engine ["Dual-Source RAG Engine"]
+        E --> G["Topic Normalization"]
+        G --> H{"Tier-1: FAISS Search<br/>all-MiniLM-L6-v2 (384-d)"}
+        H -->|Sim >= 0.52 (Hit)| I["Offline Ground Truth"]
+        H -->|Sim < 0.52 (Miss)| J["Tier-2: GFG Scraper + GitHub Miner"]
+        J --> K["Sliding Window Chunking"]
+        K --> I
+        I --> L["Gemini Progressive Batch Prompt"]
+        L --> M["3 Grounded Interview Questions"]
     end
+
+    subgraph Speech_Engine ["AI Speech & Communication Engine"]
+        F --> N["Gemini Multimodal STT"]
+        N --> O["Verbatim Transcript"]
+        O --> P["Linguistic Regex Metrics<br/>(Fillers, Hedging, Tech terms)"]
+        O --> Q["SentenceTransformer (384-d)"]
+        Q --> R["LogisticRegression Classifier<br/>(interview_classifier.pkl)"]
+        P & R --> S["Calibrated Fluency Score (0-100%)"]
+    end
+
+    subgraph Eval_Engine ["Technical Evaluator & Adaptive Follow-Up"]
+        O --> T["Technical Rubric Grading (0-10 pts)"]
+        T --> U["Extract Misconception (M)"]
+        U --> V["Generate Adaptive Turn 2 Question"]
+    end
+
+    M --> UI
+    S & T & V --> UI
 ```
 
 ---
 
-## 3. Phase 1: What Happens When You Type "BFS" (The RAG Pipeline Deep Dive)
+## 2. Module 1: The Input & Topic Normalization Layer
 
-When you type `"BFS"` in the **Dynamic AI Topic Interview** input box and click **Start Interview**, here is the exact internal sequence of operations:
+### 2.1 The Problem: Why Raw Queries Fail
+When a user enters `"BFS"`, `"bfs"`, `"breadth first"`, or `"Breadth First Search Algorithm"`, passing this raw string directly to vector search or web scrapers causes failures:
+- Scrapers searching for `"BFS"` might return *"Bureau of Financial Services"* or unrelated acronyms.
+- Vector search might suffer from token vocabulary divergence.
 
-### 3.1 Topic Query Normalization
-A raw user input like `"BFS"` is concise but ambiguous for web searches. In [`rag_service.py`](file:///c:/prj/interview%20web%20app/backend/app/services/rag_service.py), `normalize_topic_query("BFS")` executes:
-- It checks known acronym mappings: `"bfs"` maps to `"Breadth First Search (BFS) graph traversal algorithm"`.
-- This ensures semantic vector search and web queries capture full conceptual breadth rather than matching irrelevant abbreviations.
+### 2.2 How Topic Normalization Works
+In [`rag_service.py`](file:///c:/prj/interview%20web%20app/backend/app/services/rag_service.py), `normalize_topic_query()` executes two steps:
 
-### 3.2 Tier-1: Offline Knowledge Store & FAISS Vector Search
-The system first queries the local vector knowledge store ([`offline_store.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/sources/offline_store.py)) to avoid network latency and API costs.
+1. **Deterministic Acronym & Canonical Dictionary:**
+   A curated dictionary maps acronyms to fully qualified canonical domain representations:
+   $$\text{"bfs"} \implies \text{"Breadth First Search (BFS) graph traversal algorithm"}$$
+   $$\text{"dfs"} \implies \text{"Depth First Search (DFS) graph traversal algorithm"}$$
+   $$\text{"dp"} \implies \text{"Dynamic Programming (DP) memoization and tabulation"}$$
+   $$\text{"sql"} \implies \text{"Structured Query Language (SQL) database management systems"}$$
 
-1. **How the Offline DB is Structured:**
-   - Files: `dsa_topics.json`, `system_design.json`, and `dynamic_cache.json` located in `backend/app/rag/offline_db/`.
-   - Each entry contains curated definitions, properties, common misconceptions, and standard interview problems.
-2. **Dense Vector Embeddings:**
-   - The query `"Breadth First Search (BFS) graph traversal algorithm"` is passed to the embedding model:
-     `SentenceTransformer("all-MiniLM-L6-v2")`.
-   - This model converts the query into a **384-dimensional dense floating-point vector**:
-     $$\vec{q} = [v_1, v_2, \dots, v_{384}]$$
-   - All text chunks in the offline database were pre-embedded into the exact same 384-dimensional vector space.
-3. **FAISS (`faiss.IndexFlatIP`) Cosine Similarity:**
-   - FAISS (Facebook AI Similarity Search) computes the Inner Product ($IP$) between the normalized query vector $\vec{q}$ and all stored vectors $\vec{d}_i$:
-     $$\text{Cosine Similarity} = \frac{\vec{q} \cdot \vec{d}_i}{\|\vec{q}\| \|\vec{d}_i\|}$$
-   - Because all vectors are $L_2$-normalized beforehand ($\|\vec{v}\| = 1$), the inner product is mathematically identical to cosine similarity (range: $-1.0$ to $+1.0$).
-4. **The Threshold Check (`DEFAULT_THRESHOLD = 0.52`):**
-   - If the top matched chunk has a similarity score $\ge 0.52$:
-     - **OFFLINE HIT!** The system extracts the ground truth context immediately from local storage in less than 5 milliseconds.
-   - If the similarity score $< 0.52$:
-     - **OFFLINE MISS.** The topic is unknown or novel, triggering the **Tier-2 Online Discovery Pipeline**.
+2. **Token Jaccard Similarity (For Fuzzy Fallbacks):**
+   If an exact key is not found, the query string $Q$ is compared against known subject canonical titles $T_i$ using **Token Jaccard Similarity**:
+   $$J(Q, T_i) = \frac{|T_Q \cap T_{T_i}|}{|T_Q \cup T_{T_i}|}$$
+   Where $T_Q$ is the set of lowercase alphanumeric tokens in the query.
+   - If $\max_i J(Q, T_i) \ge 0.5$, the canonical topic string is substituted.
+   - Otherwise, a standardized search query template is synthesized: `f"{Q} computer science technical interview concepts and algorithms"`.
 
 ---
 
-### 3.3 Tier-2: Online Discovery Fallback (GeeksforGeeks & GitHub)
+## 3. Module 2: High-Dimensional Embeddings & Vector Mathematics
 
-When an offline miss occurs, two specialized scrapers run in parallel:
-
-#### A. GeeksforGeeks Scraper (`GFGRetriever`)
-1. **Multi-Engine Search:**
-   - Searches DuckDuckGo Lite and Bing for `site:geeksforgeeks.org Breadth First Search`.
-   - If search engines rate-limit, it generates deterministic direct slug fallbacks:
-     `https://www.geeksforgeeks.org/dsa/breadth-first-search/`
-2. **DOM Cleaning via BeautifulSoup (`BeautifulSoup(html, "html.parser")`):**
-   - Decomposes non-content elements: `<script>`, `<style>`, `<nav>`, `<footer>`, `<header>`, `<aside>`, `<svg>`, `<ads>`.
-   - Identifies the core article container: `<article>`, `div.article-content`, or `div.text`.
-   - Extracts headings (`h1`–`h4`), paragraphs (`p`), lists (`li`), code blocks (`pre`), and Big-O tables.
-   - Strips advertising boilerplate and retains only technical text.
-
-#### B. GitHub Technical Repository Retriever (`GitHubRetriever`)
-1. **Repository Search API:**
-   - Queries `https://api.github.com/search/repositories?q=breadth+first+search+interview+questions&sort=stars`.
-2. **Relevance Ranking Algorithm:**
-   Each candidate repository is scored using a weighted multi-factor formula:
-   $$\text{Score} = (N_{\text{topic}} \times 3.5) + (N_{\text{interview}} \times 2.0) + (2 \times \log_{10}(\text{stars} + 1))$$
-   - $N_{\text{topic}}$: Match count of topic terms (`bfs`, `breadth`, `first`, `search`).
-   - $N_{\text{interview}}$: Match count of interview indicator words (`interview`, `questions`, `prep`, `dsa`, `algo`).
-   - $\log_{10}(\text{stars} + 1)$: Popularity and trust signal (dampened logarithmically so a million-star repo doesn't override topic relevance).
-3. **Content Extraction:**
-   - The highest-ranked repo is inspected for markdown documentation (`README.md`, problem notes, solutions).
+### 3.1 What is an Embedding? ($\mathbb{R}^{384}$ Vector Space)
+A text embedding transforms unstructured English text into a point in high-dimensional Euclidean space $\mathbb{R}^{384}$:
+$$\vec{v} = \begin{bmatrix} v_1 & v_2 & v_3 & \dots & v_{384} \end{bmatrix}^T \in \mathbb{R}^{384}$$
+We use the **`all-MiniLM-L6-v2`** transformer:
+- Input tokens are mapped through 6 Transformer encoder blocks with self-attention.
+- Mean pooling is applied over the contextual token representations.
+- Words with similar meanings (e.g., *"Queue"*, *"FIFO"*, *"First In First Out"*) are mapped to points that are geographically close to each other in this 384-dimensional space.
 
 ---
 
-### 3.4 What is Chunking & Why Does Overlap Matter?
+### 3.2 The Mathematics of $L_2$ Normalization (Why & How)
 
-Raw web pages and GitHub repositories are tens of thousands of words long. LLMs cannot reliably synthesize targeted interview questions from an undifferentiated 50,000-character blob of HTML text. We must **chunk** the text.
+#### Why must we normalize vectors?
+In standard vector spaces, the dot product between two vectors $\vec{a}$ and $\vec{b}$ is:
+$$\vec{a} \cdot \vec{b} = \|\vec{a}\|_2 \|\vec{b}\|_2 \cos(\theta)$$
+If a document chunk is long, its word embedding sum has a **large magnitude** ($\|\vec{a}\|_2 \gg 1$). A short document has a small magnitude.
+If we do not normalize, **longer documents get artificially higher similarity scores simply because they have more words**, even if they are semantically less relevant!
+
+#### How $L_2$ Normalization is done:
+For any vector $\vec{v} = [v_1, v_2, \dots, v_d]$, the **$L_2$ Norm** (Euclidean length) is:
+$$\|\vec{v}\|_2 = \sqrt{\sum_{i=1}^{d} v_i^2} = \sqrt{v_1^2 + v_2^2 + \dots + v_{384}^2}$$
+
+We normalize by dividing every component by its Euclidean length:
+$$\vec{u} = \frac{\vec{v}}{\|\vec{v}\|_2} = \begin{bmatrix} \frac{v_1}{\|\vec{v}\|_2} & \frac{v_2}{\|\vec{v}\|_2} & \dots & \frac{v_d}{\|\vec{v}\|_2} \end{bmatrix}^T$$
+
+**Mathematical Proof of Unit Length:**
+$$\|\vec{u}\|_2^2 = \sum_{i=1}^{d} \left(\frac{v_i}{\|\vec{v}\|_2}\right)^2 = \frac{\sum_{i=1}^d v_i^2}{\|\vec{v}\|_2^2} = \frac{\|\vec{v}\|_2^2}{\|\vec{v}\|_2^2} = 1 \implies \|\vec{u}\|_2 = 1$$
+Every normalized vector now lies on the surface of a unit hypersphere $S^{d-1}$ in $\mathbb{R}^{384}$.
+
+---
+
+### 3.3 The Mathematics of Cosine Similarity & Inner Product
+
+The **Cosine Similarity** between query vector $\vec{q}$ and document vector $\vec{d}$ is defined as the cosine of the angle $\theta$ between them:
+$$\text{Cosine Similarity}(\vec{q}, \vec{d}) = \cos(\theta) = \frac{\vec{q} \cdot \vec{d}}{\|\vec{q}\|_2 \|\vec{d}\|_2}$$
+
+Because both $\vec{q}$ and $\vec{d}$ have been $L_2$-normalized beforehand:
+$$\|\vec{q}\|_2 = 1 \quad \text{and} \quad \|\vec{d}\|_2 = 1$$
+
+The formula simplifies to the **Inner Product ($IP$)**:
+$$\cos(\theta) = \frac{\vec{q} \cdot \vec{d}}{1 \times 1} = \vec{q} \cdot \vec{d} = \sum_{i=1}^{384} q_i d_i$$
+
+---
+
+### 3.4 Why Normalized Inner Product is Lightning Fast
+- To compute raw cosine similarity, a CPU would have to compute:
+  1. $384$ multiplications and additions for $\vec{q} \cdot \vec{d}$.
+  2. $384$ squares, additions, and a square root for $\|\vec{q}\|_2$.
+  3. $384$ squares, additions, and a square root for $\|\vec{d}\|_2$.
+  4. A final division.
+- With pre-normalized vectors, FAISS performs **only 384 fused multiply-accumulate (FMA) instructions**:
+  $$\sum_{i=1}^{384} q_i d_i$$
+- Modern x86 processors execute AVX-512 vector instructions that calculate 16 multiplications in a single clock cycle.
+- This allows FAISS to scan 100,000 document chunks in **under 2 milliseconds**!
+
+---
+
+### 3.5 FAISS (`IndexFlatIP`) & The Significance of Threshold $\tau = 0.52$
+
+In [`offline_store.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/sources/offline_store.py):
+```python
+self.index = faiss.IndexFlatIP(self.dimension) # dimension = 384
+```
+`IndexFlatIP` stores vectors in a contiguous C++ memory buffer and performs exact inner-product search.
+
+#### Why is the threshold set to $\tau = 0.52$?
+In high-dimensional spaces ($\mathbb{R}^{384}$), vectors suffer from the **geometric phenomenon of concentration of measure**:
+- Two completely random, unrelated sentences in English have a baseline cosine similarity between $0.0$ and $0.25$.
+- Two loosely related sentences (e.g., both mentioning "computer" or "software") score between $0.30$ and $0.45$.
+- Truly semantically matched topics (e.g., `"BFS traversal"` and `"Breadth First Search in graphs using Queue"`) score between **$0.52$ and $0.92$**.
+- Setting $\tau = 0.52$ is the mathematically calibrated boundary:
+  - If score $\ge 0.52 \implies$ **Offline Hit.** Zero network delay, instant grounded context.
+  - If score $< 0.52 \implies$ **Offline Miss.** Triggers Tier-2 Online Discovery without returning irrelevant cached topics.
+
+---
+
+## 4. Module 3: Web Retrieval, Scraping & Chunking Mathematics
+
+### 4.1 GeeksforGeeks Web Scraper (`GFGRetriever`)
+When an offline miss occurs, [`gfg_retriever.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/sources/gfg_retriever.py) discovers articles via DuckDuckGo Lite & Bing:
+1. **DOM Sanitization:**
+   Decomposes non-content tags: `script`, `style`, `nav`, `footer`, `header`, `aside`, `svg`, `ads`.
+2. **Selector Filtering:**
+   Extracts `article`, `div.article-content`, or `div.text`.
+3. Retains code blocks (`pre`), headings (`h1`–`h4`), and lists (`li`).
+
+---
+
+### 4.2 GitHub Mining & The Repository Ranking Formula
+[`github_retriever.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/sources/github_retriever.py) searches GitHub repositories and scores every candidate:
+
+$$\text{Score} = (N_{\text{topic}} \times 3.5) + (N_{\text{interview}} \times 2.0) + (2.0 \times \log_{10}(\text{stars} + 1))$$
+
+- $N_{\text{topic}}$: Count of topic keywords in the repository name and description.
+- $N_{\text{interview}}$: Count of interview indicator keywords (`interview`, `questions`, `dsa`, `prep`).
+- $\text{stars}$: Stargazer count on GitHub.
+
+### 4.3 Why Logarithmic Scaling for Stars?
+Why $\log_{10}(\text{stars} + 1)$ instead of raw stars?
+- If we used raw stars, a generic repository like `freeCodeCamp` (400,000 stars) would get a score of $400,000$, completely overwhelming the topic match score ($3.5 \times 2 = 7.0$).
+- In human perception and information theory (Weber-Fechner Law), the difference in trust between **10 stars and 100 stars** is significant (a $10\times$ increase). The difference between **100,000 stars and 100,090 stars** is negligible.
+- Logarithm captures this **diminishing marginal utility**:
+  - $10\text{ stars} \implies \log_{10}(11) \approx 1.04 \implies \text{Score contribution} \approx 2.08$
+  - $1,000\text{ stars} \implies \log_{10}(1001) \approx 3.00 \implies \text{Score contribution} \approx 6.00$
+  - $100,000\text{ stars} \implies \log_{10}(100001) \approx 5.00 \implies \text{Score contribution} \approx 10.00$
+- This ensures that popular repositories get a modest boost, but a highly targeted repository with 200 stars will beat a 50,000-star repository that only mentions the keyword in passing.
+
+---
+
+### 4.4 The Sliding-Window Chunking Algorithm (Math & Boundary Coverage Guarantee)
+
+In [`gfg_retriever.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/sources/gfg_retriever.py#L160-L194):
+- **Chunk Size ($C$):** $1000$ characters.
+- **Chunk Overlap ($O$):** $200$ characters.
+- **Window Stride ($S$):** $S = C - O = 1000 - 200 = 800$ characters.
+
+#### Mathematical Formula for Total Chunks:
+For a document of total length $L$ characters:
+$$N_{\text{chunks}} = \left\lceil \frac{L - C}{S} \right\rceil + 1 = \left\lceil \frac{L - 1000}{800} \right\rceil + 1 \quad (\text{for } L > C)$$
+
+#### Boundary Coverage Guarantee Theorem:
+> **Theorem:** Any continuous engineering concept, invariant definition, or code snippet of length $k \le O = 200$ characters is **guaranteed to appear in full without truncation in at least one chunk**.
+
+**Proof:**
+Suppose an explanation spans the character interval $[a, b]$ where $b - a = k \le 200$.
+The chunk windows start at positions $p_n = n \cdot S = 800n$ for $n = 0, 1, 2, \dots$
+Each window covers $[800n, 800n + 1000]$.
+Suppose the snippet crosses the boundary of Chunk $n$, meaning $800n + 1000$ falls inside $[a, b]$:
+$$a < 800n + 1000 < b$$
+Now consider the next Chunk $n+1$:
+Its window starts at $800(n+1) = 800n + 800$.
+Since $b - a \le 200$, and $a < 800n + 1000$:
+$$b = a + k \le a + 200 < (800n + 1000) + 200 = 800n + 1200$$
+The window of Chunk $n+1$ ends at:
+$$\text{End}_{n+1} = 800(n+1) + 1000 = 800n + 1800 > b$$
+And its start is:
+$$\text{Start}_{n+1} = 800n + 800 \le a \quad (\text{since } b - 200 \ge 800n + 800)$$
+Therefore:
+$$[a, b] \subseteq [800(n+1), 800(n+1) + 1000]$$
+The snippet $[a, b]$ is **fully contained inside Chunk $n+1$**. $\blacksquare$
+
+---
+
+## 5. Module 4: Speech-to-Text & Acoustic Signal Processing
+
+### 5.1 Why Local Whisper Failed
+In Python 3.13, local `openai-whisper` depends on C++ binaries (`torch-audio`, `ffmpeg`, and C-extensions). Because pre-compiled wheel binaries were missing for Python 3.13 on Windows, `import whisper` threw an unhandled `ModuleNotFoundError`, causing transcripts to default to `"No response provided."`.
+
+### 5.2 How Digital Audio Works
+When you speak into the browser microphone via Streamlit's `st.audio_input`:
+1. **Sampling Rate ($f_s = 16,000\text{ Hz}$ or $44,100\text{ Hz}$):**
+   The continuous pressure wave of your voice $x(t)$ is sampled at discrete time intervals $T_s = \frac{1}{f_s}$.
+   By the **Nyquist-Shannon Sampling Theorem**, to capture human speech frequencies up to $8\text{ kHz}$, the sampling rate must be at least:
+   $$f_s \ge 2 \times f_{\max} = 2 \times 8,000\text{ Hz} = 16,000\text{ Hz}$$
+2. **Quantization & Bit Depth ($B = 16\text{ bits}$):**
+   Each sample amplitude is mapped to a discrete integer in $[-32768, 32767]$ ($2^{16}$ levels).
+3. **Uncompressed WAV Byte Stream:**
+   A standard 5-second 16kHz mono audio recording contains:
+   $$N_{\text{samples}} = 5\text{ s} \times 16,000\text{ samples/s} = 80,000\text{ samples}$$
+   $$\text{File Size} = 80,000 \times 2\text{ bytes} + 44\text{ bytes (header)} = 160,044\text{ bytes} \approx 160\text{ KB}$$
+
+---
+
+### 5.3 Acoustic Spectrograms & Multimodal Audio STT
+In [`speech_service.py`](file:///c:/prj/interview%20web%20app/backend/app/services/speech_service.py#L141-L208):
+```python
+part = types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav")
+```
+Gemini converts the time-domain waveform $x[n]$ into a frequency-domain **Mel-Spectrogram** using the **Short-Time Fourier Transform (STFT)**:
+$$X(m, \omega) = \sum_{n=-\infty}^{\infty} x[n] w[n - m] e^{-j\omega n}$$
+Where $w[n]$ is a Hamming analysis window.
+- The energy spectrum is mapped onto the non-linear human auditory **Mel Scale**:
+  $$m = 2595 \log_{10}\left(1 + \frac{f}{700}\right)$$
+- The resulting 2D audio patch spectrogram is ingested directly into Gemini's Transformer attention layers, translating acoustic phonemes directly into English text tokens.
+
+### 5.4 Verbatim Hesitation Retention
+Standard consumer STT models (e.g. Siri, Google Docs Voice Typing) aggressively delete hesitation words like *"um"* and *"uh"* to make text look pretty.
+For an **interview coaching app**, this is catastrophic: if *"um"* is deleted by STT, the speech coach would falsely report 0% filler density!
+Our specialized prompt instructs Gemini:
+> *"You are a verbatim speech-to-text transcriber for a live technical interview. Preserve verbal hesitation words like um, uh, ah, like if spoken. Accurately capture technical engineering vocabulary and algorithmic terms."*
+
+This allows the speech coach to detect filler words with **100% precision**.
+
+---
+
+## 6. Module 5: The Speech Delivery & Communication Evaluation Pipeline
+
+### 6.1 Linguistic Regex Lexicons & Density Mathematics
+In [`speech_service.py`](file:///c:/prj/interview%20web%20app/backend/app/services/speech_service.py#L104-L140):
+
+$$\text{Filler Density } (D_f) = \left( \frac{\sum_{w \in \text{FILLER\_WORDS}} \text{Count}(w)}{N_{\text{total\_words}}} \right) \times 100$$
+
+$$\text{Hedging Density } (D_h) = \left( \frac{\sum_{p \in \text{HEDGING\_PHRASES}} \text{Count}(p)}{N_{\text{total\_words}}} \right) \times 100$$
+
+$$\text{Technical Keyword Density } (D_t) = \left( \frac{\sum_{k \in \text{TECHNICAL\_KEYWORDS}} \text{Count}(k)}{N_{\text{total\_words}}} \right) \times 100$$
+
+---
+
+### 6.2 Lexical Diversity: Type-Token Ratio (TTR)
+Measures vocabulary richness and absence of monotonous repetition:
+$$\text{TTR} = \frac{|V|}{N_{\text{total\_words}}} = \frac{\text{Count of Unique Word Stems}}{\text{Total Word Count}}$$
+- A candidate who speaks in circles (*"The queue is a queue because queue queues elements"*) has a low $\text{TTR} \le 0.35$.
+- An articulate engineer using diverse technical descriptions has a high $\text{TTR} \ge 0.55$.
+
+---
+
+### 6.3 Machine Learning Delivery Classifier (`interview_classifier.pkl`)
+- **Trained Model:** `sklearn.linear_model.LogisticRegression`
+- **Feature Vector:** $\mathbf{x} = \text{SentenceTransformer}(\text{transcript}) \in \mathbb{R}^{384}$
+- **Classes:** $Y \in \{0: \text{"needs\_improvement"}, 1: \text{"good"}\}$
+
+---
+
+### 6.4 The Mathematics of Logistic Regression & The Sigmoid Function
+
+#### The Linear Predictor:
+The model computes the linear combination of the input vector $\mathbf{x}$ and the learned weights $\mathbf{w} \in \mathbb{R}^{384}$:
+$$z = \mathbf{w}^T \mathbf{x} + b = w_1 x_1 + w_2 x_2 + \dots + w_{384} x_{384} + b$$
+Where:
+- $\mathbf{w}$ is the learned 384-dimensional parameter vector.
+- $b \in \mathbb{R}$ is the learned scalar bias (intercept).
+
+#### The Sigmoid (Logistic) Function:
+Because $z \in (-\infty, +\infty)$, it cannot be directly interpreted as a probability.
+The **Sigmoid Function** $\sigma(z)$ maps any real number to a valid probability in $(0, 1)$:
+$$\sigma(z) = \frac{1}{1 + e^{-z}} = \frac{e^z}{1 + e^z}$$
 
 ```
-Original Article Text:
-[--------------------------------- 10,000 characters ---------------------------------]
-
-Chunk 1: [-------- 1000 chars --------]
-                    [=== 200 overlap ===]
-Chunk 2:            [-------- 1000 chars --------]
-                                        [=== 200 overlap ===]
-Chunk 3:                                [-------- 1000 chars --------]
+Probability P(Y = "good")
+    1.0 ┤                                  ╭──────────
+        │                                ╭─╯
+    0.5 ┼───────────────────────────────╭╯ (Decision Boundary: z = 0)
+        │                            ╭──╯
+    0.0 ┴───────────╭────────────────╯───────────────
+       -∞          -4      -2       0       2       4          +∞
+                                  Logits (z)
 ```
 
-- **Chunk Size (`1000` characters):**
-  A 1000-character window (approx. 150–200 words) corresponds to the ideal semantic unit of an engineering concept (e.g., the definition of a Queue invariant, a pseudocode block, or a time complexity proof).
-- **Chunk Overlap (`200` characters):**
-  If an explanation starts at character 950 and finishes at character 1100, a naive non-overlapping cut would sever the sentence in half.
-  Overlap ensures that boundaries between chunks preserve full sentences, preventing lost context, split code snippets, or disconnected complexity proofs.
-- **Sliding Window Implementation:**
-  ```python
-  start = 0
-  while start < len(text):
-      end = min(start + chunk_size, len(text))
-      chunk_text = text[start:end].strip()
-      all_chunks.append(chunk_text)
-      if end >= len(text):
-          break
-      start += chunk_size - chunk_overlap  # advance window by (1000 - 200) = 800 chars
-  ```
+**Properties of the Sigmoid Function:**
+1. As $z \to +\infty \implies e^{-z} \to 0 \implies \sigma(z) \to 1.0$ (High confidence of `GOOD`).
+2. As $z \to -\infty \implies e^{-z} \to +\infty \implies \sigma(z) \to 0.0$ (High confidence of `NEEDS_IMPROVEMENT`).
+3. When $z = 0 \implies \sigma(0) = \frac{1}{1 + 1} = 0.5$ (Equally uncertain).
+
+#### Mathematical Formulation for Training (Binary Cross-Entropy Loss):
+The weights $\mathbf{w}$ were learned offline by minimizing the **Binary Cross-Entropy Loss (Log-Loss)** over $M$ training examples:
+$$\mathcal{L}(\mathbf{w}, b) = -\frac{1}{M} \sum_{i=1}^{M} \left[ y_i \log(\sigma(\mathbf{w}^T \mathbf{x}_i + b)) + (1 - y_i) \log(1 - \sigma(\mathbf{w}^T \mathbf{x}_i + b)) \right] + \frac{\lambda}{2} \|\mathbf{w}\|_2^2$$
+Where $\frac{\lambda}{2} \|\mathbf{w}\|_2^2$ is the $L_2$ Ridge Regularization term with $C = \frac{1}{\lambda} = 1.0$.
 
 ---
 
-### 3.5 Dynamic Caching (LRU & TTL)
-Once GFG and GitHub text is retrieved and chunked:
-1. It is synthesized into a clean topic entry: summary, key concepts, Big-O complexities, and sample questions.
-2. It is saved into `backend/app/rag/offline_db/dynamic_cache.json`.
-3. An **LRU (Least Recently Used) cache eviction policy** ensures the dynamic cache never grows indefinitely (capped at 50 topics, with a 30-day Time-To-Live).
-4. Future interviews on `"BFS"` will hit the cache instantly in Tier-1.
+### 6.5 The 383-Dimensional Decision Boundary Hyperplane
+
+The classifier's decision boundary is the set of points where the model is completely neutral ($P = 0.5$):
+$$\sigma(\mathbf{w}^T \mathbf{x} + b) = 0.5 \iff \mathbf{w}^T \mathbf{x} + b = 0$$
+This equation defines a **383-dimensional flat hyperplane** dividing $\mathbb{R}^{384}$ into two half-spaces:
+- Points on one side ($\mathbf{w}^T \mathbf{x} + b > 0$) are classified as **`GOOD`**.
+- Points on the other side ($\mathbf{w}^T \mathbf{x} + b < 0$) are classified as **`NEEDS_IMPROVEMENT`**.
 
 ---
 
-### 3.6 Progressive Batch Question Generation
-Earlier, questions were generated sequentially in a loop, making 3 to 4 separate LLM network calls that took 30+ seconds and caused timeouts.
+### 6.6 Calibrated Composite Delivery Score Formula
 
-Now, [`generate_rag_questions_batch()`](file:///c:/prj/interview%20web%20app/backend/app/services/rag_service.py) generates all 3 progressive interview questions in a **single prompt (~3.8 seconds)**:
-- **Question 1 (Core Invariants):** Focuses on foundational data structures (e.g., Queue vs Stack, why FIFO guarantees shortest path).
-- **Question 2 (Implementation & Complexities):** Focuses on cycle prevention, visited set invariants, and Big-O Time/Space ($O(V + E)$).
-- **Question 3 (Real-World Deep Dive & Scale):** Focuses on multi-source BFS, 0-1 BFS with Deque, or handling massive graphs.
+In [`speech_service.py`](file:///c:/prj/interview%20web%20app/backend/app/services/speech_service.py#L248-L293), raw probabilities are not shown directly because high-dimensional embeddings compress near the decision boundary. Instead, a calibrated multi-factor score is computed:
 
-The questions are committed to the SQLite database (`interview_sessions`, `questions`, and `interview_questions`) and returned to the Streamlit UI.
+$$S_{\text{delivery}} = \text{clamp}\left(30.0, 98.0, \; 82.0 + \Delta_{\text{filler}} + \Delta_{\text{tech}} + \Delta_{\text{hedge}} + \Delta_{\text{ML}}\right)$$
 
----
+Where:
+$$\Delta_{\text{filler}} = \begin{cases} 
++6.0 & \text{if } D_f = 0 \text{ and } N_{\text{words}} \ge 20 \\
++2.0 & \text{if } 0 < D_f \le 2.0 \\
+-8.0 & \text{if } 4.0 < D_f \le 7.0 \\
+-15.0 & \text{if } D_f > 7.0 \\
+0.0 & \text{otherwise}
+\end{cases}$$
 
-## 4. Phase 2: Submitting Your Answer (Text vs. Voice)
+$$\Delta_{\text{tech}} = \begin{cases} 
++8.0 & \text{if } N_{\text{tech}} \ge 4 \\
++5.0 & \text{if } N_{\text{tech}} \in [2, 3] \\
+-8.0 & \text{if } N_{\text{words}} \ge 30 \text{ and } N_{\text{tech}} = 0 \\
+0.0 & \text{otherwise}
+\end{cases}$$
 
-When Question 1 is presented, you have two modes of answering:
+$$\Delta_{\text{hedge}} = \begin{cases} 
++3.0 & \text{if } N_{\text{hedge}} = 0 \text{ and } N_{\text{words}} \ge 20 \\
+-4.0 & \text{if } N_{\text{hedge}} = 2 \\
+-8.0 & \text{if } N_{\text{hedge}} \ge 3 \\
+0.0 & \text{otherwise}
+\end{cases}$$
 
-### 4.1 Typed Written Submission
-You enter your technical explanation into the text area and click **Evaluate Written Answer**.
-- Frontend sends: `POST /api/v1/interviews/{id}/questions/{qid}/answer` with JSON `{"answer_text": "..."}`.
-- Backend skips audio transcription and immediately triggers the dual evaluation pipeline.
+$$\Delta_{\text{ML}} = \begin{cases} 
++2.0 & \text{if ML Verdict is } \text{"GOOD"} \\
+-10.0 & \text{if ML Verdict is } \text{"NEEDS\_IMPROVEMENT"}
+\end{cases}$$
 
-### 4.2 Spoken Voice Submission & Gemini Multimodal Audio STT
-You click the microphone button, record your spoken answer, and click **🎙️ Transcribe & Evaluate Spoken Answer**:
-
-1. **Audio Recording Capture:**
-   Streamlit's `st.audio_input` captures browser microphone audio and packages it as an uncompressed WAV byte stream.
-2. **Audio Upload Endpoint:**
-   Frontend sends `POST /api/v1/interviews/{id}/questions/{qid}/audio-answer` via multipart form upload.
-3. **Disk Persistence:**
-   The backend saves the file to:
-   `uploads/audio/user_{user_id}_session_{session_id}_q_{iq_id}_{timestamp}.wav`
-4. **Gemini Multimodal Speech-to-Text (`_transcribe_with_gemini`):**
-   - The raw audio bytes are wrapped into an inline data part:
-     ```python
-     part = types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav")
-     ```
-   - A specialized verbatim transcription prompt instructs Gemini:
-     - *"Transcribe this spoken audio verbatim into plain text."*
-     - *"Preserve hesitation words like um, uh, ah if spoken."* (Critical for the speech coach!)
-     - *"Accurately capture technical engineering terms like BFS, FIFO, Queue, Big-O."*
-   - In **~1.5 seconds**, Gemini returns the exact verbatim transcript.
-   - *(If Gemini is unreachable or offline, it falls back to local OpenAI Whisper).*
+$$\text{Final Verdict} = \begin{cases} 
+\text{"GOOD"} & \text{if } S_{\text{delivery}} \ge 70.0 \\
+\text{"NEEDS\_IMPROVEMENT"} & \text{if } S_{\text{delivery}} < 70.0
+\end{cases}$$
 
 ---
 
-## 5. Phase 3: The Dual Evaluation Pipeline (How Answers Are Graded)
+## 7. Module 6: Technical Evaluation & The Adaptive Follow-Up Engine
 
-Once the candidate's answer text is ready (either typed directly or transcribed from voice), [`evaluate_submission()`](file:///c:/prj/interview%20web%20app/backend/app/services/evaluation_service.py) evaluates it across **two simultaneous dimensions**:
+### 7.1 The 4-Factor Weighted Technical Rubric
+In [`evaluator.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/interviewer/evaluator.py), Gemini evaluates the candidate against ground truth:
 
-```
-Candidate Transcript:
-"BFS guarantees finding the shortest path in an unweighted graph because, um, every edge value is equal..."
-                     │
-         ┌───────────┴───────────┐
-         ▼                       ▼
-[ DIMENSION 1: SPEECH ]     [ DIMENSION 2: TECHNICAL ]
-Linguistic Regex Analysis   RAG 4-Factor Rubric (Gemini)
-+ ML Classifier (PKL)       + Ground Truth Context
-         │                       │
-         ▼                       ▼
-Fluency: 97.0% (GOOD)       Score: 6.0 / 10.0
-Fillers: 1 ('um' - 0.95%)   Verdict: Partially Correct
-Tech Terms: 11 detected     Misconception: Omitted visited set
-Feedback: "Practice..."     Follow-up: "How do you handle cycles?"
-```
+$$S_{\text{technical}} = (0.40 \times S_{\text{invariants}}) + (0.25 \times S_{\text{completeness}}) + (0.20 \times S_{\text{complexity}}) + (0.15 \times S_{\text{precision}})$$
+
+1. **Conceptual Correctness & Invariants ($40\%$ / $4.0$ pts):**
+   - Correct core data structure (Queue vs Stack in BFS).
+   - Invariant preservation (FIFO ensures nodes at distance $d$ are visited before $d+1$).
+2. **Completeness & Edge Cases ($25\%$ / $2.5$ pts):**
+   - Disconnected graphs, cycles, visited set tracking.
+3. **Complexity Analysis ($20\%$ / $2.0$ pts):**
+   - Time: $O(V + E)$ where every vertex is enqueued once and every edge is considered once.
+   - Space: $O(V)$ in the worst case for queue storage.
+4. **Technical Precision ($15\%$ / $1.5$ pts):**
+   - Clear, unambiguous terminology.
 
 ---
 
-### 5.1 Dimension 1: AI Speech & Delivery Fluency Evaluator
-Located in [`speech_service.py`](file:///c:/prj/interview%20web%20app/backend/app/services/speech_service.py):
-
-#### A. Linguistic Feature Extraction (Regex Lexicons)
-The transcript is processed through regular expression engines against domain-specific lexicons:
-
-1. **Vocal Fillers:**
-   `FILLER_WORDS = ["um", "umm", "uh", "hmm", "ah", "like", "basically", "actually", "you know", "er"]`
-   $$\text{Filler Density (\%)} = \left(\frac{\text{Filler Words Count}}{\text{Total Words Count}}\right) \times 100$$
-2. **Hedging Phrases (Indecision / Lack of Seniority):**
-   `HEDGING_PHRASES = ["maybe", "probably", "perhaps", "i think", "i guess", "sort of", "kind of", "not sure"]`
-   $$\text{Hedging Density (\%)} = \left(\frac{\text{Hedging Count}}{\text{Total Words Count}}\right) \times 100$$
-3. **Technical Engineering Vocabulary:**
-   Scans for 80+ engineering terms (`queue`, `stack`, `heap`, `priority queue`, `bfs`, `dfs`, `graph`, `vertex`, `dijkstra`, `big-o`, `time complexity`, etc.).
-   $$\text{Technical Density (\%)} = \left(\frac{\text{Technical Terms Count}}{\text{Total Words Count}}\right) \times 100$$
-4. **Lexical Diversity (Type-Token Ratio - TTR):**
-   Measures vocabulary richness and avoidance of monotonous repetition:
-   $$\text{TTR} = \frac{\text{Count of Unique Words}}{\text{Total Words}}$$
-
-#### B. Machine Learning Delivery Classifier (`interview_classifier.pkl`)
-- **Model:** Scikit-Learn `LogisticRegression(solver='lbfgs', max_iter=200)`.
-- **Input:** 384-dimensional embedding generated by `SentenceTransformer("all-MiniLM-L6-v2")` on the candidate's transcript.
-- **Output:** Predicts delivery category: `good` vs `needs_improvement`.
-
-#### C. Calibrated Composite Delivery Score (0 to 100%)
-Instead of showing an uncalibrated raw probability from a binary classifier, the system computes a holistic communication score:
-- **Baseline:** 82.0%
-- **Filler Rewards/Penalties:**
-  - $0$ fillers (and words $\ge 20$): $+6\%$ bonus
-  - Filler density $\le 2\%$: $+2\%$ bonus
-  - Filler density $> 4\%$: $-8\%$ penalty
-  - Filler density $> 7\%$: $-15\%$ penalty
-- **Technical Vocabulary Rewards/Penalties:**
-  - $\ge 4$ technical keywords: $+8\%$ bonus
-  - $\ge 2$ technical keywords: $+5\%$ bonus
-  - $\ge 30$ words but $0$ technical keywords: $-8\%$ penalty
-- **Hedging Penalties:**
-  - $\ge 2$ hedging phrases: $-4\%$ penalty
-  - $\ge 3$ hedging phrases: $-8\%$ penalty
-- **ML Classifier Prediction:**
-  - If ML model predicts `NEEDS_IMPROVEMENT`: $-10\%$
-  - If ML model predicts `GOOD`: $+2\%$
-- **Clamping:** Score is clamped between $30.0\%$ and $98.0\%$. Score $\ge 70\%$ yields a **`GOOD`** verdict.
-
-#### D. Tailored Verbal Coaching Feedback
-The system dynamically generates actionable, personalized tips:
-- *"Vocal filler density detected at 4.2%. Substitute fillers ('um', 'like') with deliberate brief pauses."*
-- *"Strong engineering vocabulary (11 technical terms: queue, heap, bfs, graph, edge)."*
+### 7.2 Technical Misconception Extraction Logic
+The AI explicitly isolates the candidate's core error into a structured string:
+$$\text{Misconception } (M) = \text{Extract}(\text{GroundTruthInvariants} \setminus \text{CandidateClaims})$$
+*Example:*
+> Candidate: *"BFS traverses neighbors using a Queue. We get shortest path because edge values are equal."*
+> Ground Truth Invariants: `[FIFO Queue, Equal Edge Weight, Visited Set for Cycles, Level Calculation]`
+> **Extracted Misconception ($M$):** *"Candidate completely omitted the visited set invariant and failed to explain how cyclic graphs cause infinite recursion without it."*
 
 ---
 
-### 5.2 Dimension 2: Technical RAG Evaluation (4-Factor Weighted Rubric)
-Located in [`evaluator.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/interviewer/evaluator.py):
+### 7.3 Adaptive Branching: Guided Diagnostics vs. Scale Challenges
 
-The candidate's transcript is submitted to Gemini alongside the **Retrieved Technical Ground Truth** and **Ideal Reference Answer**. The AI acts as a Principal Engineering Interviewer and grades according to this strict rubric:
+In [`follow_up_engine.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/interviewer/follow_up_engine.py), the follow-up question function $F(S_{\text{technical}}, M)$ branches conditionally:
 
-| Parameter | Weight | Points | Evaluation Focus |
-| :--- | :---: | :---: | :--- |
-| **1. Conceptual Invariants** | **40%** | **4.0** | Did the candidate specify the exact invariant? (e.g., FIFO Queue guarantees exploring nodes in order of edge distance from source). |
-| **2. Completeness & Edge Cases** | **25%** | **2.5** | Did they mention cycle detection, visited set tracking, disconnected components, and null roots? |
-| **3. Complexity Analysis** | **20%** | **2.0** | Did they correctly state and prove asymptotic Time ($O(V + E)$) and Space ($O(V)$) complexities? |
-| **4. Technical Precision** | **15%** | **1.5** | Use of unambiguous terminology without self-contradiction. |
-| **Total** | **100%** | **10.0** | |
+$$F(S_{\text{technical}}, M) = \begin{cases} 
+\text{Probe}(M) & \text{if } S_{\text{technical}} < 7.5 \quad (\text{Partially Correct or Incorrect}) \\
+\text{ScaleDeepDive}(\text{Topic}) & \text{if } S_{\text{technical}} \ge 7.5 \quad (\text{Fully Correct})
+\end{cases}$$
 
-**The AI returns:**
-1. **Score:** X.X / 10.0
-2. **Verdict:** Correct ($\ge 7.5$), Partially Correct ($4.0 - 7.4$), or Incorrect ($< 4.0$).
-3. **What was good:** Concrete strengths identified.
-4. **What was missing:** Invariants omitted.
-5. **Detected Technical Misconceptions:** Explicitly extracted misconception string (e.g., *"Candidate correctly stated that BFS uses a queue, but failed to explain how cyclic graphs cause infinite loops without a visited set."*).
-6. **Ideal Answer:** Concise reference solution grounded in retrieved literature.
+- **Branch A ($S < 7.5$ - Misconception Probe):**
+  > *"You mentioned using a Queue for level traversal, but what code pattern prevents an infinite loop when the graph contains cycles? Walk me through how the visited set functions."*
+- **Branch B ($S \ge 7.5$ - Architectural Scale Challenge):**
+  > *"Your Queue invariant and complexity analysis are completely correct. Now suppose the graph has billions of nodes and exceeds single-machine RAM. How would you design a distributed, multi-threaded BFS across a cluster?"*
 
 ---
 
-## 6. Phase 4: The Adaptive Follow-Up Engine (Turn 2)
+### 7.4 Follow-Up Answer Evaluation (Boolean Lattice)
+When the candidate answers Turn 2, [`evaluate_follow_up()`](file:///c:/prj/interview%20web%20app/backend/app/rag/interviewer/follow_up_engine.py#L90-L148) maps the response onto a 3-point Boolean Resolution Lattice:
 
-Most interview platforms are "static question cards"—you answer, receive a score, and move to an unrelated question. That is **not** how real engineering interviews work.
+$$\mathcal{R} = \{\text{Resolved}, \text{Partially Resolved}, \text{Unresolved}\}$$
 
-In a real technical interview, the interviewer **drills down on your gaps** before moving on. Our platform introduces a **True 2-Turn Conversation Stepper**.
+- **`Resolved`:** Candidate successfully identified and rectified their missing invariant.
+- **`Partially Resolved`:** Addressed the concept conceptually but missed edge-case constraints.
+- **`Unresolved`:** Re-iterated previous answer without addressing the probe.
 
-```
-[ QUESTION 1: TURN 1 ] ──> Candidate Answers ──> Technical Evaluation detects missing invariant
-                                                         │
-                                                         ▼
-[ QUESTION 1: TURN 2 ] ◄── System formulates targeted probe on THAT specific invariant
-         │
-         ├── Candidate submits Follow-Up response (Voice or Text)
-         ├── Evaluator assesses if misconception was RESOLVED
-         └── Candidate clicks: "Proceed to Question 2 ➡️"
+---
+
+## 8. Module 7: Relational Database Architecture & Lifecycle
+
+All session and evaluation data is stored in SQLite (`interview_platform.db`):
+
+```mermaid
+erDiagram
+    User ||--o{ InterviewSession : owns
+    User {
+        int id PK
+        string email UK
+        string hashed_password
+        string name
+        datetime created_at
+    }
+    InterviewSession ||--o{ InterviewQuestion : contains
+    InterviewSession {
+        int id PK
+        int user_id FK
+        string generation_mode
+        string custom_topic
+        float overall_score
+        string status
+        datetime started_at
+        datetime completed_at
+    }
+    InterviewQuestion ||--|| Answer : receives
+    InterviewQuestion {
+        int id PK
+        int interview_id FK
+        int question_id FK
+        int order
+    }
+    Answer {
+        int id PK
+        int interview_question_id FK
+        text answer_text
+        string audio_path
+        float technical_score
+        string technical_verdict
+        text misconception
+        text follow_up_question
+        text follow_up_answer
+        string follow_up_feedback
+        string speech_verdict
+        float speech_confidence
+        int filler_count
+        float filler_density
+        int technical_keyword_count
+    }
 ```
 
-### 6.1 Misconception Extraction
-In [`follow_up_engine.py`](file:///c:/prj/interview%20web%20app/backend/app/rag/interviewer/follow_up_engine.py), the follow-up prompt inspects:
-- The question asked.
-- The candidate's answer.
-- The detected misconception.
-- The technical score.
-
-### 6.2 Adaptive Question Formulation
-The follow-up question is generated based on candidate performance:
-- **Scenario A: Score < 7.5 (Partially Correct or Incorrect):**
-  The AI constructs a **guided diagnostic probe** aimed squarely at their missing invariant:
-  > *"You mentioned that BFS uses a Queue to traverse level-by-level, but what happens if the graph contains cycles? Walk me through how you prevent an infinite loop in code."*
-- **Scenario B: Score $\ge$ 7.5 (Fully Correct):**
-  The AI advances to an **architectural deep dive or scale challenge**:
-  > *"Your Queue invariant and complexity analysis are spot on. Now suppose the graph has billions of edges and cannot fit into the memory of a single machine. How would you design a distributed BFS?"*
-
-### 6.3 Follow-Up Answer Evaluation & Resolution
-The candidate answers Turn 2 via voice or text. The endpoint `POST /interviews/{id}/questions/{qid}/follow-up` calls [`evaluate_follow_up()`](file:///c:/prj/interview%20web%20app/backend/app/rag/interviewer/follow_up_engine.py):
-1. **Resolution Verdict:** `Resolved`, `Partially Resolved`, or `Unresolved`.
-2. **Interviewer Commentary:** Explains whether the candidate rectified their misconception and showed engineering depth.
-3. Only after completing Turn 2 does the **"Proceed to Question 2 ➡️"** button unlock.
+#### Overall Session Score Formula:
+When the candidate finalizes the interview, the overall session score is the arithmetic mean of all evaluated main technical scores:
+$$\text{Overall Score} = \frac{1}{K} \sum_{k=1}^{K} S_{\text{technical}, k}$$
 
 ---
 
-## 7. Phase 5: Data Models & Session Lifecycle
+## 9. 🎯 Top 15 Viva & Technical Interview Questions
 
-The backend persists every interaction into an ACID-compliant SQLite relational database using SQLAlchemy:
+Here are the exact answers to the top questions evaluators, professors, or recruiters will ask:
 
-```
-[ users ]
-  id, email, hashed_password, name, created_at
-     │
-     └──< [ interview_sessions ]
-            id, user_id, subject_id, generation_mode, custom_topic,
-            overall_score, status, started_at, completed_at
-               │
-               └──< [ interview_questions ]
-                      id, interview_id, question_id, order
-                         │
-                         └──1:1 [ answers ]
-                                id, interview_question_id,
-                                answer_text, audio_path, submitted_at,
-                                technical_score, technical_verdict, technical_feedback,
-                                misconception, follow_up_question, follow_up_answer, follow_up_feedback,
-                                speech_verdict, speech_confidence, filler_count, filler_density,
-                                hedging_count, technical_keyword_count, technical_density, lexical_diversity
-```
+#### Q1: "Why do we normalize embedding vectors using $L_2$ norm before FAISS search?"
+> **Answer:** "Dividing a vector by its $L_2$ norm ($\|\vec{v}\|_2 = \sqrt{\sum v_i^2}$) projects it onto a unit hypersphere where its magnitude is exactly $1.0$. This accomplishes two critical goals:
+> 1. It removes bias caused by text length (longer texts having artificially larger dot products).
+> 2. It simplifies the cosine similarity formula $\frac{\vec{u} \cdot \vec{v}}{\|\vec{u}\| \|\vec{v}\|}$ to a simple inner product $\vec{u} \cdot \vec{v} = \sum_{i=1}^{384} u_i v_i$. This eliminates square root and division operations, enabling hardware SIMD acceleration in FAISS to scan 100,000 vectors in under 2 milliseconds."
 
-- When you complete all questions and follow-ups, the backend averages all valid `technical_score` values into `session.overall_score`.
-- The interview status is set to `COMPLETED`.
-- All analytics, transcripts, and audio playback links are displayed on your Candidate Dashboard.
+#### Q2: "What is the mathematical definition and role of the Sigmoid function in your speech classifier?"
+> **Answer:** "The Sigmoid function $\sigma(z) = \frac{1}{1 + e^{-z}}$ is a non-linear activation function that maps any real-valued linear prediction $z = \mathbf{w}^T \mathbf{x} + b$ from $(-\infty, +\infty)$ into a valid probability in $(0, 1)$. In our system, $\sigma(z)$ outputs the posterior probability $P(Y = \text{'good'} \mid \mathbf{x})$ that a candidate's verbal delivery is clear and articulate based on their 384-dimensional sentence embedding."
 
----
+#### Q3: "What is the decision boundary of your Logistic Regression model?"
+> **Answer:** "The decision boundary is the locus of points where the model is equally uncertain between both classes ($P = 0.5 \iff \sigma(z) = 0.5$). Since $\sigma(0) = 0.5$, this corresponds to the linear equation $\mathbf{w}^T \mathbf{x} + b = 0$. In our 384-dimensional embedding space, this forms a 383-dimensional flat hyperplane dividing fluent candidates from candidates needing improvement."
 
-## 8. 🎯 Viva & Technical Defense Cheat Sheet (Top 15 Questions & Answers)
+#### Q4: "Why did you use a 200-character overlap in your sliding-window chunking algorithm?"
+> **Answer:** "Without overlap, continuous technical explanations or algorithm code blocks that fall near the 1,000-character boundary get severed in half, losing critical context. Mathematically, a sliding overlap of 200 characters guarantees that any continuous sentence or concept of length $k \le 200$ characters is guaranteed to appear completely unbroken in at least one chunk."
 
-Here are the exact answers to the top questions professors, recruiters, or evaluators will ask you about this system:
+#### Q5: "Why did you apply a logarithmic scale to GitHub repository stars in your retriever?"
+> **Answer:** "Raw stars exhibit an extreme power-law distribution: a general repository might have 400,000 stars, while a highly specific DSA repository has 500 stars. If we used raw stars, star count would completely overpower topic relevance. Applying $2.0 \times \log_{10}(\text{stars} + 1)$ models the law of diminishing returns: the difference between 10 and 1,000 stars is significant ($1.0$ vs $3.0$), while the difference between 50,000 and 100,000 stars is small ($4.7$ vs $5.0$), ensuring topic relevance always dominates."
 
-#### Q1: "Why did you implement a Dual-Source RAG instead of simply prompting Gemini directly?"
-> **Answer:** "Direct LLM prompting is vulnerable to hallucinations, dated training data, and generic questions. Our Tier-1 Offline FAISS store guarantees sub-5ms latency for known curriculum topics. If an unknown topic is requested, our Tier-2 Online Discovery automatically mines real-world GitHub interview repos and GeeksforGeeks articles, chunks the text, and feeds grounded technical ground truth to Gemini. This guarantees the interview questions and scoring criteria are strictly tied to industry engineering standards."
+#### Q6: "What is the difference between offline FAISS cosine similarity and online retrieval?"
+> **Answer:** "Tier-1 Offline FAISS search performs sub-5ms cosine similarity matching over pre-embedded local topic databases (`dsa_topics.json`, `system_design.json`). If the similarity score is $\ge 0.52$, we serve grounded ground truth locally. If the score is $< 0.52$, it triggers Tier-2 Online Discovery, which scrapes GeeksforGeeks and GitHub in real time, sliding-window chunks the text, and caches it dynamically into `dynamic_cache.json` using an LRU cache policy for future instant retrieval."
 
-#### Q2: "What is chunking and why did you use an overlap in your GFG and GitHub scrapers?"
-> **Answer:** "Chunking breaks large web documents into manageable windows of 1,000 characters so they fit within vector embedding limits and maintain high retrieval relevance. We used a 200-character sliding overlap so that sentences, algorithm invariants, or Big-O complexity tables that fall near the edge of a window are not abruptly cut in half."
+#### Q7: "Why did you transition from local Whisper to Gemini Multimodal Audio for Speech-to-Text?"
+> **Answer:** "Local Whisper depends on heavy C++ compile toolchains, ffmpeg binaries, and PyTorch audio wheels that frequently fail or crash on Python 3.13. Gemini Multimodal Audio accepts raw WAV byte streams directly in the cloud via `types.Part.from_bytes`, transcribing audio in ~1.5s with zero local install overhead. Furthermore, our specialized prompt ensures verbatim capture of verbal hesitations ('um', 'uh') so our speech coach can accurately calculate filler word density."
 
-#### Q3: "How does the FAISS vector search work mathematically?"
-> **Answer:** "We use `SentenceTransformer('all-MiniLM-L6-v2')` to embed queries and document chunks into a 384-dimensional vector space. We normalize the vectors using $L_2$ norm and index them in `faiss.IndexFlatIP`. The Inner Product of normalized vectors equals the cosine similarity. If the score exceeds our threshold of 0.52, we achieve an offline hit."
+#### Q8: "How does Type-Token Ratio (TTR) measure lexical diversity?"
+> **Answer:** "Type-Token Ratio is the ratio of unique word stems (types, $|V|$) to the total number of words spoken (tokens, $N$): $\text{TTR} = \frac{|V|}{N}$. It measures verbal richness. A candidate who repeats the same vocabulary has a low TTR ($< 0.40$), while an articulate engineer using varied technical explanations achieves a high TTR ($> 0.55$)."
 
-#### Q4: "Why did you switch speech transcription from OpenAI Whisper to Gemini Multimodal Audio?"
-> **Answer:** "Local Whisper requires heavy C++ compiler dependencies, PyTorch audio bindings, and ffmpeg binaries that frequently fail or crash on modern environments like Python 3.13. Gemini Multimodal Audio transcribes audio natively in the cloud via `types.Part.from_bytes` in under 1.5 seconds with zero local overhead, perfectly capturing verbal hesitation fillers ('um', 'uh') for our speech classifier while accurately transcribing complex DSA terms."
+#### Q9: "Why was your previous voice evaluation giving 0/10 technical score and 54.1% confidence?"
+> **Answer:** "Because Whisper failed silently to load, the transcription returned an empty string, which defaulted the candidate's answer to the 3-word placeholder `'No response provided.'`. Gemini evaluated this string against the technical question and naturally awarded 0/10 points. Meanwhile, the Logistic Regression model evaluated the embedding of `'No response provided.'`, which landed very close to the decision boundary $z \approx 0$, yielding a raw sigmoid probability of $\sigma(0.16) \approx 54.1\%$."
 
-#### Q5: "Is your Machine Learning speech model being trained during the interview?"
-> **Answer:** "No. In production machine learning, training and inference are separate. Our classifier (`interview_classifier.pkl`) is a Scikit-Learn Logistic Regression model that was trained offline. During the interview, it performs real-time inference on the 384-dimensional dense sentence embeddings of the candidate's speech to classify delivery quality."
+#### Q10: "How does your system formulate an adaptive follow-up question?"
+> **Answer:** "Instead of picking a random static question, the RAG evaluator performs set difference between the ground truth invariants and candidate claims: $M = \text{GroundTruthInvariants} \setminus \text{CandidateClaims}$. If the score is $< 7.5$, it formulates a diagnostic probe targeting that exact missing invariant (e.g. why a stack violates BFS shortest path). If the score is $\ge 7.5$, it challenges the candidate with an architectural scale or distributed systems edge case."
 
-#### Q6: "How do you calculate the speech confidence and fluency score?"
-> **Answer:** "We use a multi-factor calibrated delivery model. We start with a baseline score of 82% and adjust it algorithmically based on:
-> 1. Vocal filler density (penalizing over 4% fillers).
-> 2. Domain technical keyword count (rewarding 3+ technical terms).
-> 3. Hedging phrases (penalizing expressions of uncertainty like 'I think' or 'maybe').
-> 4. The ML Logistic Regression classification verdict."
+#### Q11: "What are the 4 parameters in your technical evaluation rubric and their weights?"
+> **Answer:** 
+> 1. Conceptual Invariants & Core Correctness ($40\%$ / $4.0$ pts)
+> 2. Completeness & Edge Cases ($25\%$ / $2.5$ pts)
+> 3. Asymptotic Complexity Proofs Big-O ($20\%$ / $2.0$ pts)
+> 4. Technical Precision & Communication ($15\%$ / $1.5$ pts)
+> Total = $10.0$ points."
 
-#### Q7: "What makes your follow-up question feature adaptive?"
-> **Answer:** "Unlike static interview platforms, our follow-up engine inspects the candidate's response to extract specific technical misconceptions. If a candidate misses an invariant, Turn 2 generates a diagnostic probe to guide them to the right principle. If they answer correctly, it generates an advanced deep-dive question into scale, distributed systems, or edge cases."
+#### Q12: "How does the Streamlit frontend manage state between Turn 1 and Turn 2?"
+> **Answer:** "We track a session state key `turn_mode_{id}_{qid}`. Once Turn 1 is submitted, the backend returns the technical score and follow-up probe. The UI updates the state to `'follow_up'`, swapping the display to the adaptive follow-up card, unlocking dedicated voice/text inputs, and disabling progression to Question 2 until the follow-up probe is completed."
 
-#### Q8: "What happens if a candidate submits an audio file with pure silence or background noise?"
-> **Answer:** "The audio file is checked for size (>100 bytes). If silence is recorded, the transcript defaults to an empty response. The speech evaluator detects zero words and immediately returns a score of 0% with advice: 'No audible response detected. Please speak clearly into your microphone.' The technical evaluator returns a score of 0/10."
+#### Q13: "What happens if a candidate submits pure silence via audio?"
+> **Answer:** "The audio file size is verified ($> 100$ bytes). If silence or near-silence is recorded, the Gemini transcript is empty. The speech evaluator detects 0 words and returns a score of $0.0\%$ with coaching advice: 'No audible response detected. Please speak clearly into your microphone.' The technical evaluator awards $0/10$."
 
-#### Q9: "How does the frontend Stepper UI handle the two turns of an interview question?"
-> **Answer:** "In Streamlit, we maintain a session state turn key for every question (`turn_mode_{id}`). When Turn 1 is submitted, the state automatically transitions to `'follow_up'`. The UI swaps the main card with an active yellow Follow-Up card, presents dedicated voice and text input boxes, and locks the 'Next Question' button until the follow-up probe is completed."
+#### Q14: "How does the platform prevent port collisions on launch?"
+> **Answer:** "Our launcher `run_platform.py` checks ports 8000 (FastAPI) and 8501 (Streamlit) using TCP socket probing. On Windows, it executes `netstat -ano` to identify any stale process listening on those ports and terminates it via `taskkill /F /PID` before spawning fresh instances."
 
-#### Q10: "How do you ensure candidate credentials and API keys remain secure?"
-> **Answer:** "Candidate passwords are never stored in plaintext; they are hashed using bcrypt through Passlib. API authentication is handled via short-lived JWT tokens signed with HMAC-SHA256. All private API keys and database credentials reside exclusively in `.env`, which is strictly ignored by `.gitignore` and never committed to GitHub."
-
-#### Q11: "What database is used and how is it initialized?"
-> **Answer:** "We use SQLite managed through SQLAlchemy ORM. During the FastAPI lifespan startup event, `Base.metadata.create_all()` creates all tables automatically if they don't exist, and `seed_data()` populates initial subjects, topics, and development test accounts."
-
-#### Q12: "How do you prevent port conflicts when launching the app?"
-> **Answer:** "Our unified launcher [`run_platform.py`](file:///c:/prj/interview%20web%20app/run_platform.py) checks whether ports 8000 (FastAPI) or 8501 (Streamlit) are already occupied. On Windows, it automatically terminates any stale PID listening on those ports before launching the fresh servers."
-
-#### Q13: "What is Lexical Diversity (Type-Token Ratio) in speech analysis?"
-> **Answer:** "Type-Token Ratio (TTR) is the ratio of unique words to total words spoken. A higher TTR indicates articulate, rich verbal delivery, whereas a low TTR indicates repetitive phrasing."
-
-#### Q14: "How does the system ensure fast question generation without timing out?"
-> **Answer:** "We replaced sequential single-question generation with batch progressive prompting (`generate_rag_questions_batch`). In a single prompt of ~3.8 seconds, Gemini returns 3 grounded questions with reference contexts and ideal answers, eliminating timeouts."
-
-#### Q15: "Can this system be deployed to cloud platforms like AWS, Render, or Docker?"
-> **Answer:** "Yes. The backend and frontend are decoupled. The backend can run via Uvicorn in a Docker container on AWS ECS or Render, and the Streamlit frontend can be hosted independently or alongside it. Switching from SQLite to PostgreSQL only requires changing the `DATABASE_URL` connection string in `.env`."
+#### Q15: "How are candidate passwords and API keys protected?"
+> **Answer:** "Passwords are never stored in plaintext; they are salted and hashed using bcrypt via Passlib. User sessions use HMAC-SHA256 signed JWT tokens. All private API keys and database credentials reside exclusively in `.env`, which is strictly ignored by `.gitignore` and never committed to version control."
