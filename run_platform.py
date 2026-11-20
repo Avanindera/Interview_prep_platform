@@ -14,6 +14,12 @@ import subprocess
 import time
 import socket
 
+# Safe encoding configuration for Windows terminals
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 
 def kill_process_on_port(port: int):
     """Finds and terminates any existing process listening on the given port."""
@@ -70,11 +76,11 @@ backend_process = subprocess.Popen(backend_cmd, cwd=BACKEND_DIR)
 time.sleep(3)
 
 # Start frontend
-frontend_cmd = [sys.executable, "-m", "streamlit", "run", "frontend/app.py", "--server.port", "8501"]
+frontend_cmd = [sys.executable, "-m", "streamlit", "run", "frontend/app.py", "--server.port", "8501", "--server.headless", "true"]
 print("[2/2] Starting Streamlit Frontend Web App on http://localhost:8501 ...")
 frontend_process = subprocess.Popen(frontend_cmd, cwd=BASE_DIR)
 
-print("\n🚀 Both servers running! Press Ctrl+C in this terminal to shut down.\n")
+print("\n[READY] Both servers running! Open http://localhost:8501 in your browser.\nPress Ctrl+C in this terminal to shut down.\n")
 
 try:
     backend_process.wait()
