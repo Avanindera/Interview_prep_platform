@@ -91,5 +91,7 @@ class Answer(Base):
     technical_density = Column(Float, nullable=True)
     lexical_diversity = Column(Float, nullable=True)
     speech_feedback = Column(Text, nullable=True)
+    semantic_depth = Column(Float, nullable=True)
+    keybert_keyphrases = Column(Text, nullable=True)
 
     interview_question = relationship("InterviewQuestion", back_populates="answer")

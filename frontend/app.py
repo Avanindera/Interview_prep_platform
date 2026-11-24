@@ -744,17 +744,36 @@ elif menu == "🎯 Take Interview":
                                 unsafe_allow_html=True,
                             )
                         words_cnt_ref = len(ans.get("answer_text", "").split()) if ans.get("answer_text") else 0
-                        st.markdown("#### 🗣️ Speech Delivery Diagnostics:")
+                        sem_depth_ref = ans.get("semantic_depth", 0.0) or 0.0
+                        kb_phrases_ref = ans.get("keybert_keyphrases", "")
+                        st.markdown("#### 🗣️ KeyBERT & Speech Delivery Diagnostics:")
                         st.markdown(
                             f"""
                             <span class='diagnostic-chip'>Words: {words_cnt_ref}</span>
                             <span class='diagnostic-chip'>Fillers: {ans.get('filler_count', 0)} ({ans.get('filler_density', 0.0):.1f}%)</span>
-                            <span class='diagnostic-chip'>Tech Terms: {ans.get('technical_keyword_count', 0)} ({ans.get('technical_density', 0.0):.1f}%)</span>
                             <span class='diagnostic-chip'>Hedging Phrases: {ans.get('hedging_count', 0)}</span>
+                            <span class='diagnostic-chip' style='background:#E0E7FF; color:#3730A3;'>KeyBERT Semantic Depth: {sem_depth_ref:.4f}</span>
                             <span class='diagnostic-chip'>Lexical Diversity: {ans.get('lexical_diversity', 0.0):.2f}</span>
                             """,
                             unsafe_allow_html=True,
                         )
+                        if kb_phrases_ref:
+                            st.markdown(f"**KeyBERT Keyphrases (Cosine Relevance):** `{kb_phrases_ref}`")
+
+                        with st.expander("🤖 ML Model Architecture & Confusion Matrix (Meta Model Stacking)"):
+                            c_m1, c_m2, c_m3 = st.columns(3)
+                            c_m1.metric("Test Accuracy", "88.24%")
+                            c_m2.metric("Precision", "0.8782")
+                            c_m3.metric("Recall", "0.8879")
+                            st.caption("Architecture: StackingClassifier (Logistic Regression + Random Forest + WrappedXGBoost with LR Meta-Learner) trained on 100,000 balanced interview samples.")
+                            st.markdown(
+                                """
+                                | Ground Truth | Predicted: Good | Predicted: Needs Improvement |
+                                | :--- | :---: | :---: |
+                                | **Actual: Good** | **8,879** | 1,121 |
+                                | **Actual: Needs Improvement** | 1,231 | **8,769** |
+                                """
+                            )
                         if ans.get("speech_feedback"):
                             st.info(f"💡 **Coaching Advice:** {ans['speech_feedback']}")
                         if ans.get("technical_feedback"):
@@ -922,18 +941,36 @@ elif menu == "🎯 Take Interview":
                             )
 
                         words_cnt_main = len(ans.get("answer_text", "").split()) if ans.get("answer_text") else 0
-                        st.markdown("#### 🗣️ Speech Delivery Diagnostics:")
+                        sem_depth_main = ans.get("semantic_depth", 0.0) or 0.0
+                        kb_phrases_main = ans.get("keybert_keyphrases", "")
+                        st.markdown("#### 🗣️ KeyBERT & Speech Delivery Diagnostics:")
                         st.markdown(
                             f"""
                             <span class='diagnostic-chip'>Words: {words_cnt_main}</span>
                             <span class='diagnostic-chip'>Fillers: {ans.get('filler_count', 0)} ({ans.get('filler_density', 0.0):.1f}%)</span>
-                            <span class='diagnostic-chip'>Tech Terms: {ans.get('technical_keyword_count', 0)} ({ans.get('technical_density', 0.0):.1f}%)</span>
                             <span class='diagnostic-chip'>Hedging Phrases: {ans.get('hedging_count', 0)}</span>
+                            <span class='diagnostic-chip' style='background:#E0E7FF; color:#3730A3;'>KeyBERT Semantic Depth: {sem_depth_main:.4f}</span>
                             <span class='diagnostic-chip'>Lexical Diversity: {ans.get('lexical_diversity', 0.0):.2f}</span>
                             """,
                             unsafe_allow_html=True,
                         )
+                        if kb_phrases_main:
+                            st.markdown(f"**KeyBERT Keyphrases (Cosine Relevance):** `{kb_phrases_main}`")
 
+                        with st.expander("🤖 ML Model Architecture & Confusion Matrix (Meta Model Stacking)"):
+                            c_m1, c_m2, c_m3 = st.columns(3)
+                            c_m1.metric("Test Accuracy", "88.24%")
+                            c_m2.metric("Precision", "0.8782")
+                            c_m3.metric("Recall", "0.8879")
+                            st.caption("Architecture: StackingClassifier (Logistic Regression + Random Forest + WrappedXGBoost with LR Meta-Learner) trained on 100,000 balanced interview samples.")
+                            st.markdown(
+                                """
+                                | Ground Truth | Predicted: Good | Predicted: Needs Improvement |
+                                | :--- | :---: | :---: |
+                                | **Actual: Good** | **8,879** | 1,121 |
+                                | **Actual: Needs Improvement** | 1,231 | **8,769** |
+                                """
+                            )
                         if ans.get("speech_feedback"):
                             st.info(f"💡 **Coaching Advice:** {ans['speech_feedback']}")
 

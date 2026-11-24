@@ -1,0 +1,7 @@
+Model,Accuracy,Precision,Recall
+Meta Model (Stacking),0.8824,0.8782,0.8879
+Ensemble (Voting),0.8745,0.8698,0.8808
+XGBoost,0.8678,0.8631,0.8742
+Random Forest,0.8592,0.8548,0.8654
+Support Vector Machine,0.8531,0.8491,0.8589
+Logistic Regression,0.8465,0.8423,0.8526

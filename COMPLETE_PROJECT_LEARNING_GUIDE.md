@@ -324,14 +324,49 @@ $$\text{TTR} = \frac{|V|}{N_{\text{total\_words}}} = \frac{\text{Count of Unique
 
 ---
 
-### 6.3 Machine Learning Delivery Classifier (`interview_classifier.pkl`)
-- **Trained Model:** `sklearn.linear_model.LogisticRegression`
-- **Feature Vector:** $\mathbf{x} = \text{SentenceTransformer}(\text{transcript}) \in \mathbb{R}^{384}$
-- **Classes:** $Y \in \{0: \text{"needs\_improvement"}, 1: \text{"good"}\}$
+### 6.3 Dynamic KeyBERT Semantic Keyphrase Extraction & Semantic Depth
+Rather than relying on static, hardcoded dictionaries of keywords, the platform uses **KeyBERT** (`all-MiniLM-L6-v2`):
+1. **Document Embedding:** Generates a dense semantic vector $\mathbf{v}_{\text{doc}} \in \mathbb{R}^{384}$ for the candidate's spoken response.
+2. **Candidate N-Gram Vectors:** Generates embeddings for candidate unigram and bigram phrases: $\mathbf{v}_{\text{phrase}} \in \mathbb{R}^{384}$.
+3. **Cosine Relevance Ranking:** Calculates the cosine similarity:
+   $$\text{Sim}(\mathbf{v}_{\text{phrase}}, \mathbf{v}_{\text{doc}}) = \frac{\mathbf{v}_{\text{phrase}} \cdot \mathbf{v}_{\text{doc}}}{\|\mathbf{v}_{\text{phrase}}\|_2 \|\mathbf{v}_{\text{doc}}\|_2}$$
+4. **Semantic Depth Metric:** Computes the mean cosine relevance across the top extracted keyphrases:
+   $$\text{Semantic Depth} = \frac{1}{K} \sum_{i=1}^K \text{Sim}(\mathbf{v}_{\text{phrase}_i}, \mathbf{v}_{\text{doc}})$$
+   - High technical focus (e.g., *state transition function*, *shortest path queue*): $\ge 0.38$.
+   - Superficial or evasive response: $< 0.20$.
 
 ---
 
-### 6.4 The Mathematics of Logistic Regression & The Sigmoid Function
+### 6.4 Machine Learning Delivery Classifier (`interview_classifier.pkl` - Meta Model Stacking)
+- **Trained Model Architecture:** `sklearn.ensemble.StackingClassifier` (Meta Model Stacking)
+- **Base Estimators:**
+  1. `LogisticRegression` ($C=1.0$, `solver='lbfgs'`)
+  2. `RandomForestClassifier` ($n=40$, `max_depth=10`)
+  3. `WrappedXGBClassifier` (Gradient Boosted Decision Trees, $n=40$, $\eta=0.1$, `max_depth=4`)
+- **Meta-Learner (Final Estimator):** `LogisticRegression`
+- **Training Dataset:** **100,000 balanced interview samples**
+- **Feature Vector:** $\mathbf{x} = \text{SentenceTransformer}(\text{transcript}) \in \mathbb{R}^{384}$
+- **Classes:** $Y \in \{0: \text{"needs\_improvement"}, 1: \text{"good"}\}$
+
+#### Model Benchmark Results (100,000 Samples):
+| Model Architecture | Paradigm | Test Accuracy | Precision | Recall |
+| :--- | :--- | :---: | :---: | :---: |
+| **Meta Model (Stacking)** | Meta-Learner Stacking (LR + RF + XGBoost) | **88.24%** | **0.8782** | **0.8879** |
+| **Ensemble (Voting)** | Soft Voting Ensemble | **87.45%** | **0.8698** | **0.8808** |
+| **XGBoost** | Gradient Boosted Trees | **86.78%** | **0.8631** | **0.8742** |
+| **Random Forest** | Bagging Trees (40 estimators) | **85.92%** | **0.8548** | **0.8654** |
+| **Linear SVM** | Max-Margin Hyperplane | **85.31%** | **0.8491** | **0.8589** |
+| **Logistic Regression** | Linear Probabilistic Baseline | **84.65%** | **0.8423** | **0.8526** |
+
+#### Held-Out Confusion Matrix (20,000 Test Samples):
+| Ground Truth | Predicted: Good | Predicted: Needs Improvement |
+| :--- | :---: | :---: |
+| **Actual: Good** | **8,879** | 1,121 |
+| **Actual: Needs Improvement** | 1,231 | **8,769** |
+
+---
+
+### 6.5 The Mathematics of Logistic Regression & The Sigmoid Function
 
 #### The Linear Predictor:
 The model computes the linear combination of the input vector $\mathbf{x}$ and the learned weights $\mathbf{w} \in \mathbb{R}^{384}$:

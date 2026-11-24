@@ -85,4 +85,6 @@ def evaluate_submission(
         "technical_density": speech_res.get("technical_density", 0.0),
         "lexical_diversity": speech_res.get("lexical_diversity", 0.0),
         "speech_feedback": speech_res.get("feedback", ""),
+        "semantic_depth": speech_res.get("semantic_depth", 0.0),
+        "keybert_keyphrases": ", ".join(f"{p} ({s:.2f})" for p, s in speech_res.get("keybert_keyphrases", [])[:6]) if speech_res.get("keybert_keyphrases") else "",
     }

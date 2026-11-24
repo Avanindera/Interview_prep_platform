@@ -74,6 +74,8 @@ def _format_interview_question(iq: InterviewQuestion) -> dict:
             "technical_density": ans.technical_density,
             "lexical_diversity": ans.lexical_diversity,
             "speech_feedback": ans.speech_feedback,
+            "semantic_depth": getattr(ans, "semantic_depth", 0.0) or 0.0,
+            "keybert_keyphrases": getattr(ans, "keybert_keyphrases", "") or "",
         }
 
     return {
@@ -365,6 +367,8 @@ def submit_answer(
     answer.technical_density = eval_res["technical_density"]
     answer.lexical_diversity = eval_res["lexical_diversity"]
     answer.speech_feedback = eval_res["speech_feedback"]
+    answer.semantic_depth = eval_res.get("semantic_depth", 0.0)
+    answer.keybert_keyphrases = eval_res.get("keybert_keyphrases", "")
 
     # Update overall score on session
     all_answers = (
@@ -484,6 +488,8 @@ def submit_audio_answer(
     answer.technical_density = eval_res["technical_density"]
     answer.lexical_diversity = eval_res["lexical_diversity"]
     answer.speech_feedback = eval_res["speech_feedback"]
+    answer.semantic_depth = eval_res.get("semantic_depth", 0.0)
+    answer.keybert_keyphrases = eval_res.get("keybert_keyphrases", "")
 
     # Update overall score
     all_answers = (

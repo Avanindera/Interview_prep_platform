@@ -33,11 +33,11 @@ for _ in range(5):
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DEFAULT_MODELS = [
-    os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest"),
-    "gemini-flash-lite-latest",
-    "gemini-3.1-flash-lite",
+    os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite-preview",
     "gemini-3-flash-preview",
-    "gemini-3.6-flash",
+    "gemini-flash-lite-latest",
 ]
 
 # Deduplicate model list while preserving order

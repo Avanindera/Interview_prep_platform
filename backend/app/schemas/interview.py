@@ -45,6 +45,8 @@ class AnswerResponse(BaseModel):
     technical_density: Optional[float] = None
     lexical_diversity: Optional[float] = None
     speech_feedback: Optional[str] = None
+    semantic_depth: Optional[float] = None
+    keybert_keyphrases: Optional[str] = None
 
     class Config:
         from_attributes = True
