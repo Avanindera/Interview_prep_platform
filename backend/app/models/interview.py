@@ -33,6 +33,7 @@ class InterviewSession(Base):
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     completed_at = Column(DateTime, nullable=True)
     current_question_number = Column(Integer, default=1, nullable=False)
+    target_question_count = Column(Integer, default=3, nullable=False)
 
     user = relationship("User", back_populates="interviews")
     subject = relationship("Subject", back_populates="interviews")
@@ -80,6 +81,8 @@ class Answer(Base):
     follow_up_question = Column(Text, nullable=True)
     follow_up_answer = Column(Text, nullable=True)
     follow_up_feedback = Column(Text, nullable=True)
+    follow_up_score = Column(Float, nullable=True)
+    follow_up_verdict = Column(String(50), nullable=True)
 
     # Speech Delivery Evaluation (Whisper + Linguistic Features + ML Classifier)
     speech_verdict = Column(String(50), nullable=True)

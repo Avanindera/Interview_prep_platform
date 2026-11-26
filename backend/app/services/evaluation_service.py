@@ -25,13 +25,15 @@ def evaluate_submission(
     ideal_answer: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Evaluates candidate's submission across both Technical and Speech dimensions.
+    Evaluates candidate's submission across Technical (and Speech dimensions if audio provided).
+    For typed answers (no audio_path), speech metrics are omitted (set to None).
     """
     final_text = (answer_text or "").strip()
     transcription_performed = False
 
     # 1. Transcribe audio if provided
-    if audio_path and os.path.exists(audio_path):
+    is_audio = bool(audio_path and os.path.exists(audio_path))
+    if is_audio:
         try:
             transcribed = transcribe_audio_file(audio_path)
             if transcribed:
@@ -43,8 +45,11 @@ def evaluate_submission(
     if not final_text:
         final_text = "No response provided."
 
-    # 2. Run AI Speech & Delivery Evaluation
-    speech_res = evaluate_speech_delivery(final_text)
+    # 2. Run AI Speech & Delivery Evaluation ONLY if spoken audio is provided
+    if is_audio:
+        speech_res = evaluate_speech_delivery(final_text)
+    else:
+        speech_res = {}
 
     # 3. Run RAG Technical Evaluation
     try:
@@ -68,23 +73,23 @@ def evaluate_submission(
     return {
         "answer_text": final_text,
         "transcription_performed": transcription_performed,
-        "audio_path": audio_path,
+        "audio_path": audio_path if is_audio else None,
         # Technical Evaluation
         "technical_score": tech_res.get("score", 5.0),
         "technical_verdict": tech_res.get("verdict", "Partially Correct"),
         "technical_feedback": tech_res.get("raw_evaluation", ""),
         "misconception": tech_res.get("misconception", "None"),
         "follow_up_question": tech_res.get("follow_up_question", ""),
-        # Speech Evaluation
-        "speech_verdict": speech_res.get("verdict", "GOOD"),
-        "speech_confidence": speech_res.get("confidence", 85.0),
-        "filler_count": speech_res.get("filler_count", 0),
-        "filler_density": speech_res.get("filler_density", 0.0),
-        "hedging_count": speech_res.get("hedging_count", 0),
-        "technical_keyword_count": speech_res.get("technical_keyword_count", 0),
-        "technical_density": speech_res.get("technical_density", 0.0),
-        "lexical_diversity": speech_res.get("lexical_diversity", 0.0),
-        "speech_feedback": speech_res.get("feedback", ""),
-        "semantic_depth": speech_res.get("semantic_depth", 0.0),
-        "keybert_keyphrases": ", ".join(f"{p} ({s:.2f})" for p, s in speech_res.get("keybert_keyphrases", [])[:6]) if speech_res.get("keybert_keyphrases") else "",
+        # Speech Evaluation (None for typed answers)
+        "speech_verdict": speech_res.get("verdict") if is_audio else None,
+        "speech_confidence": speech_res.get("confidence") if is_audio else None,
+        "filler_count": speech_res.get("filler_count") if is_audio else None,
+        "filler_density": speech_res.get("filler_density") if is_audio else None,
+        "hedging_count": speech_res.get("hedging_count") if is_audio else None,
+        "technical_keyword_count": speech_res.get("technical_keyword_count") if is_audio else None,
+        "technical_density": speech_res.get("technical_density") if is_audio else None,
+        "lexical_diversity": speech_res.get("lexical_diversity") if is_audio else None,
+        "speech_feedback": speech_res.get("feedback") if is_audio else None,
+        "semantic_depth": speech_res.get("semantic_depth") if is_audio else None,
+        "keybert_keyphrases": (", ".join(f"{p} ({s:.2f})" for p, s in speech_res.get("keybert_keyphrases", [])[:6]) if (is_audio and speech_res.get("keybert_keyphrases")) else None),
     }

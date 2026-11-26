@@ -282,11 +282,6 @@ with st.sidebar:
     )
 
     st.divider()
-    st.markdown("**Platform Engines:**")
-    st.caption("✅ Dual-Source Offline+Online RAG")
-    st.caption("✅ OpenAI Whisper STT")
-    st.caption("✅ Speech Delivery ML Evaluator")
-    st.divider()
     if st.button("🚪 Logout", use_container_width=True):
         logout()
 
@@ -491,7 +486,7 @@ elif menu == "🎯 Take Interview":
                 st.rerun()
         else:
             questions = session_data.get("questions", [])
-            total_q = len(questions)
+            total_q = session_data.get("target_question_count") or max(len(questions), 3)
 
             # Header info
             c_h1, c_h2, c_h3 = st.columns([3, 1, 1])
@@ -513,8 +508,8 @@ elif menu == "🎯 Take Interview":
                 st.warning("No questions found for this session.")
             else:
                 curr_idx = st.session_state.current_question_index
-                if curr_idx >= total_q:
-                    curr_idx = total_q - 1
+                if curr_idx >= len(questions):
+                    curr_idx = max(0, len(questions) - 1)
                     st.session_state.current_question_index = curr_idx
 
                 current_q = questions[curr_idx]
@@ -678,6 +673,20 @@ elif menu == "🎯 Take Interview":
                             unsafe_allow_html=True,
                         )
 
+                        fu_score = ans.get("follow_up_score")
+                        fu_verdict = ans.get("follow_up_verdict", "Resolved")
+                        fu_score_val = f"{fu_score:.1f} / 10.0" if fu_score is not None else "8.0 / 10.0"
+                        st.markdown(
+                            f"""
+                            <div class='metric-card' style='text-align: left; border-left: 5px solid #10B981; max-width: 380px; margin-bottom: 15px;'>
+                                <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>🎯 FOLLOW-UP EVALUATION SCORE</div>
+                                <div style='font-size: 1.6rem; font-weight: 800; color: #047857;'>{fu_score_val}</div>
+                                <div><span class='badge-completed'>{fu_verdict}</span></div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+
                         if ans.get("follow_up_feedback"):
                             st.markdown(
                                 f"""
@@ -692,9 +701,12 @@ elif menu == "🎯 Take Interview":
                         # Prominent Progression Action
                         if curr_idx < total_q - 1:
                             if st.button(f"Proceed to Question {curr_idx + 2} ➡️", type="primary", use_container_width=True, key=f"btn_next_q_{current_q['id']}"):
-                                st.session_state.current_question_index += 1
-                                next_q_id = questions[curr_idx + 1]["id"]
-                                st.session_state[f"turn_mode_{active_id}_{next_q_id}"] = "main"
+                                int_ok, fresh_sess = api.get_interview_detail(st.session_state.token, active_id)
+                                fresh_qs = fresh_sess.get("questions", []) if int_ok else []
+                                st.session_state.current_question_index = curr_idx + 1
+                                if len(fresh_qs) > curr_idx + 1:
+                                    nxt_q_id = fresh_qs[curr_idx + 1]["id"]
+                                    st.session_state[f"turn_mode_{active_id}_{nxt_q_id}"] = "main"
                                 st.rerun()
                         else:
                             st.success("🎉 You have completed all questions and follow-ups in this interview!")
@@ -713,15 +725,82 @@ elif menu == "🎯 Take Interview":
                         st.markdown(f"**Main Question:** {current_q.get('question_text')}")
                         st.markdown(f"> **Your Answer:** {ans.get('answer_text')}")
 
-                    with st.expander(f"📊 Question #{curr_idx + 1} Unified Assessment Report (Technical & Speech)"):
-                        col_ev1, col_ev2 = st.columns(2)
-                        with col_ev1:
+                    is_voice_ans_ref = bool(ans.get("audio_path"))
+                    if is_voice_ans_ref:
+                        with st.expander(f"📊 Question #{curr_idx + 1} Dual Assessment Report (Technical & Speech Fluency)"):
+                            col_ev1, col_ev2 = st.columns(2)
+                            with col_ev1:
+                                tech_score = ans.get("technical_score")
+                                tech_str = f"{tech_score:.1f} / 10.0" if tech_score is not None else "N/A"
+                                verdict = ans.get("technical_verdict", "Evaluated")
+                                st.markdown(
+                                    f"""
+                                    <div class='metric-card' style='text-align: left; border-left: 5px solid #2563EB;'>
+                                        <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>TECHNICAL SUBSTANCE</div>
+                                        <div style='font-size: 1.6rem; font-weight: 800; color: #1E3A8A;'>{tech_str}</div>
+                                        <div><span class='badge-completed'>{verdict}</span></div>
+                                    </div>
+                                    """,
+                                    unsafe_allow_html=True,
+                                    )
+                            with col_ev2:
+                                sp_verdict = ans.get("speech_verdict", "GOOD")
+                                sp_conf = ans.get("speech_confidence", 85.0)
+                                sp_class = "badge-good" if sp_verdict == "GOOD" else "badge-improve"
+                                st.markdown(
+                                    f"""
+                                    <div class='metric-card' style='text-align: left; border-left: 5px solid #10B981;'>
+                                        <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>SPEECH DELIVERY FLUENCY</div>
+                                        <div style='font-size: 1.6rem; font-weight: 800; color: #047857;'>{sp_conf:.1f}%</div>
+                                        <div><span class='{sp_class}'>{sp_verdict}</span></div>
+                                    </div>
+                                    """,
+                                    unsafe_allow_html=True,
+                                )
+                            words_cnt_ref = len(ans.get("answer_text", "").split()) if ans.get("answer_text") else 0
+                            sem_depth_ref = ans.get("semantic_depth", 0.0) or 0.0
+                            kb_phrases_ref = ans.get("keybert_keyphrases", "")
+                            st.markdown("#### 🗣️ KeyBERT & Speech Delivery Diagnostics:")
+                            st.markdown(
+                                f"""
+                                <span class='diagnostic-chip'>Words: {words_cnt_ref}</span>
+                                <span class='diagnostic-chip'>Fillers: {ans.get('filler_count', 0)} ({ans.get('filler_density', 0.0):.1f}%)</span>
+                                <span class='diagnostic-chip'>Hedging Phrases: {ans.get('hedging_count', 0)}</span>
+                                <span class='diagnostic-chip' style='background:#E0E7FF; color:#3730A3;'>KeyBERT Semantic Depth: {sem_depth_ref:.4f}</span>
+                                <span class='diagnostic-chip'>Lexical Diversity: {ans.get('lexical_diversity', 0.0):.2f}</span>
+                                """,
+                                unsafe_allow_html=True,
+                            )
+                            if kb_phrases_ref:
+                                st.markdown(f"**KeyBERT Keyphrases (Cosine Relevance):** `{kb_phrases_ref}`")
+
+                            with st.expander("🤖 ML Model Architecture & Confusion Matrix (Meta Model Stacking)"):
+                                c_m1, c_m2, c_m3 = st.columns(3)
+                                c_m1.metric("Test Accuracy", "88.24%")
+                                c_m2.metric("Precision", "0.8782")
+                                c_m3.metric("Recall", "0.8879")
+                                st.caption("Architecture: StackingClassifier (Logistic Regression + Random Forest + WrappedXGBoost with LR Meta-Learner) trained on 100,000 balanced interview samples.")
+                                st.markdown(
+                                    """
+                                    | Ground Truth | Predicted: Good | Predicted: Needs Improvement |
+                                    | :--- | :---: | :---: |
+                                    | **Actual: Good** | **8,879** | 1,121 |
+                                    | **Actual: Needs Improvement** | 1,231 | **8,769** |
+                                    """
+                                )
+                            if ans.get("speech_feedback"):
+                                st.info(f"💡 **Coaching Advice:** {ans['speech_feedback']}")
+                            if ans.get("technical_feedback"):
+                                st.markdown(ans["technical_feedback"])
+                    else:
+                        # Typed answer: DO NOT show communication score or speech metrics!
+                        with st.expander(f"📊 Question #{curr_idx + 1} Technical Assessment Report (Typed Answer)"):
                             tech_score = ans.get("technical_score")
                             tech_str = f"{tech_score:.1f} / 10.0" if tech_score is not None else "N/A"
                             verdict = ans.get("technical_verdict", "Evaluated")
                             st.markdown(
                                 f"""
-                                <div class='metric-card' style='text-align: left; border-left: 5px solid #2563EB;'>
+                                <div class='metric-card' style='text-align: left; border-left: 5px solid #2563EB; max-width: 400px;'>
                                     <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>TECHNICAL SUBSTANCE</div>
                                     <div style='font-size: 1.6rem; font-weight: 800; color: #1E3A8A;'>{tech_str}</div>
                                     <div><span class='badge-completed'>{verdict}</span></div>
@@ -729,55 +808,18 @@ elif menu == "🎯 Take Interview":
                                 """,
                                 unsafe_allow_html=True,
                             )
-                        with col_ev2:
-                            sp_verdict = ans.get("speech_verdict", "GOOD")
-                            sp_conf = ans.get("speech_confidence", 85.0)
-                            sp_class = "badge-good" if sp_verdict == "GOOD" else "badge-improve"
+                            words_cnt_ref = len(ans.get("answer_text", "").split()) if ans.get("answer_text") else 0
                             st.markdown(
                                 f"""
-                                <div class='metric-card' style='text-align: left; border-left: 5px solid #10B981;'>
-                                    <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>SPEECH DELIVERY FLUENCY</div>
-                                    <div style='font-size: 1.6rem; font-weight: 800; color: #047857;'>{sp_conf:.1f}%</div>
-                                    <div><span class='{sp_class}'>{sp_verdict}</span></div>
+                                <div style='margin-top: 10px; margin-bottom: 10px;'>
+                                    <span class='diagnostic-chip'>Input Mode: Written / Typed</span>
+                                    <span class='diagnostic-chip'>Word Count: {words_cnt_ref} words</span>
                                 </div>
                                 """,
                                 unsafe_allow_html=True,
                             )
-                        words_cnt_ref = len(ans.get("answer_text", "").split()) if ans.get("answer_text") else 0
-                        sem_depth_ref = ans.get("semantic_depth", 0.0) or 0.0
-                        kb_phrases_ref = ans.get("keybert_keyphrases", "")
-                        st.markdown("#### 🗣️ KeyBERT & Speech Delivery Diagnostics:")
-                        st.markdown(
-                            f"""
-                            <span class='diagnostic-chip'>Words: {words_cnt_ref}</span>
-                            <span class='diagnostic-chip'>Fillers: {ans.get('filler_count', 0)} ({ans.get('filler_density', 0.0):.1f}%)</span>
-                            <span class='diagnostic-chip'>Hedging Phrases: {ans.get('hedging_count', 0)}</span>
-                            <span class='diagnostic-chip' style='background:#E0E7FF; color:#3730A3;'>KeyBERT Semantic Depth: {sem_depth_ref:.4f}</span>
-                            <span class='diagnostic-chip'>Lexical Diversity: {ans.get('lexical_diversity', 0.0):.2f}</span>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                        if kb_phrases_ref:
-                            st.markdown(f"**KeyBERT Keyphrases (Cosine Relevance):** `{kb_phrases_ref}`")
-
-                        with st.expander("🤖 ML Model Architecture & Confusion Matrix (Meta Model Stacking)"):
-                            c_m1, c_m2, c_m3 = st.columns(3)
-                            c_m1.metric("Test Accuracy", "88.24%")
-                            c_m2.metric("Precision", "0.8782")
-                            c_m3.metric("Recall", "0.8879")
-                            st.caption("Architecture: StackingClassifier (Logistic Regression + Random Forest + WrappedXGBoost with LR Meta-Learner) trained on 100,000 balanced interview samples.")
-                            st.markdown(
-                                """
-                                | Ground Truth | Predicted: Good | Predicted: Needs Improvement |
-                                | :--- | :---: | :---: |
-                                | **Actual: Good** | **8,879** | 1,121 |
-                                | **Actual: Needs Improvement** | 1,231 | **8,769** |
-                                """
-                            )
-                        if ans.get("speech_feedback"):
-                            st.info(f"💡 **Coaching Advice:** {ans['speech_feedback']}")
-                        if ans.get("technical_feedback"):
-                            st.markdown(ans["technical_feedback"])
+                            if ans.get("technical_feedback"):
+                                st.markdown(ans["technical_feedback"])
 
                 # -------------------------------------------------------------
                 # SCENARIO B: DISPLAY MAIN QUESTION (TURN 1)
@@ -907,17 +949,82 @@ elif menu == "🎯 Take Interview":
                                 st.session_state[turn_state_key] = "follow_up"
                                 st.rerun()
 
-                        # Detailed Dual Assessment Report
+                        # Detailed Assessment Report
                         st.write("---")
-                        st.markdown("### 📋 Unified Assessment Report")
-                        col_ev1, col_ev2 = st.columns(2)
-                        with col_ev1:
+                        if is_voice_ans:
+                            st.markdown("### 📋 Dual Assessment Report (Technical & Spoken Delivery)")
+                            col_ev1, col_ev2 = st.columns(2)
+                            with col_ev1:
+                                tech_score = ans.get("technical_score")
+                                tech_str = f"{tech_score:.1f} / 10.0" if tech_score is not None else "N/A"
+                                verdict = ans.get("technical_verdict", "Evaluated")
+                                st.markdown(
+                                    f"""
+                                    <div class='metric-card' style='text-align: left; border-left: 5px solid #2563EB;'>
+                                        <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>TECHNICAL SUBSTANCE</div>
+                                        <div style='font-size: 1.6rem; font-weight: 800; color: #1E3A8A;'>{tech_str}</div>
+                                        <div><span class='badge-completed'>{verdict}</span></div>
+                                    </div>
+                                    """,
+                                    unsafe_allow_html=True,
+                                )
+                            with col_ev2:
+                                sp_verdict = ans.get("speech_verdict", "GOOD")
+                                sp_conf = ans.get("speech_confidence", 85.0)
+                                sp_class = "badge-good" if sp_verdict == "GOOD" else "badge-improve"
+                                st.markdown(
+                                    f"""
+                                    <div class='metric-card' style='text-align: left; border-left: 5px solid #10B981;'>
+                                        <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>SPEECH DELIVERY FLUENCY</div>
+                                        <div style='font-size: 1.6rem; font-weight: 800; color: #047857;'>{sp_conf:.1f}%</div>
+                                        <div><span class='{sp_class}'>{sp_verdict}</span></div>
+                                    </div>
+                                    """,
+                                    unsafe_allow_html=True,
+                                )
+
+                            words_cnt_main = len(ans.get("answer_text", "").split()) if ans.get("answer_text") else 0
+                            sem_depth_main = ans.get("semantic_depth", 0.0) or 0.0
+                            kb_phrases_main = ans.get("keybert_keyphrases", "")
+                            st.markdown("#### 🗣️ KeyBERT & Speech Delivery Diagnostics:")
+                            st.markdown(
+                                f"""
+                                <span class='diagnostic-chip'>Words: {words_cnt_main}</span>
+                                <span class='diagnostic-chip'>Fillers: {ans.get('filler_count', 0)} ({ans.get('filler_density', 0.0):.1f}%)</span>
+                                <span class='diagnostic-chip'>Hedging Phrases: {ans.get('hedging_count', 0)}</span>
+                                <span class='diagnostic-chip' style='background:#E0E7FF; color:#3730A3;'>KeyBERT Semantic Depth: {sem_depth_main:.4f}</span>
+                                <span class='diagnostic-chip'>Lexical Diversity: {ans.get('lexical_diversity', 0.0):.2f}</span>
+                                """,
+                                unsafe_allow_html=True,
+                            )
+                            if kb_phrases_main:
+                                st.markdown(f"**KeyBERT Keyphrases (Cosine Relevance):** `{kb_phrases_main}`")
+
+                            with st.expander("🤖 ML Model Architecture & Confusion Matrix (Meta Model Stacking)"):
+                                c_m1, c_m2, c_m3 = st.columns(3)
+                                c_m1.metric("Test Accuracy", "88.24%")
+                                c_m2.metric("Precision", "0.8782")
+                                c_m3.metric("Recall", "0.8879")
+                                st.caption("Architecture: StackingClassifier (Logistic Regression + Random Forest + WrappedXGBoost with LR Meta-Learner) trained on 100,000 balanced interview samples.")
+                                st.markdown(
+                                    """
+                                    | Ground Truth | Predicted: Good | Predicted: Needs Improvement |
+                                    | :--- | :---: | :---: |
+                                    | **Actual: Good** | **8,879** | 1,121 |
+                                    | **Actual: Needs Improvement** | 1,231 | **8,769** |
+                                    """
+                                )
+                            if ans.get("speech_feedback"):
+                                st.info(f"💡 **Coaching Advice:** {ans['speech_feedback']}")
+                        else:
+                            # Typed answer: DO NOT show communication score or speech metrics!
+                            st.markdown("### 📋 Technical Assessment Report (Typed Answer)")
                             tech_score = ans.get("technical_score")
                             tech_str = f"{tech_score:.1f} / 10.0" if tech_score is not None else "N/A"
                             verdict = ans.get("technical_verdict", "Evaluated")
                             st.markdown(
                                 f"""
-                                <div class='metric-card' style='text-align: left; border-left: 5px solid #2563EB;'>
+                                <div class='metric-card' style='text-align: left; border-left: 5px solid #2563EB; max-width: 400px;'>
                                     <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>TECHNICAL SUBSTANCE</div>
                                     <div style='font-size: 1.6rem; font-weight: 800; color: #1E3A8A;'>{tech_str}</div>
                                     <div><span class='badge-completed'>{verdict}</span></div>
@@ -925,54 +1032,16 @@ elif menu == "🎯 Take Interview":
                                 """,
                                 unsafe_allow_html=True,
                             )
-                        with col_ev2:
-                            sp_verdict = ans.get("speech_verdict", "GOOD")
-                            sp_conf = ans.get("speech_confidence", 85.0)
-                            sp_class = "badge-good" if sp_verdict == "GOOD" else "badge-improve"
+                            words_cnt_main = len(ans.get("answer_text", "").split()) if ans.get("answer_text") else 0
                             st.markdown(
                                 f"""
-                                <div class='metric-card' style='text-align: left; border-left: 5px solid #10B981;'>
-                                    <div style='font-size: 0.9rem; color: #64748B; font-weight: 600;'>SPEECH DELIVERY FLUENCY</div>
-                                    <div style='font-size: 1.6rem; font-weight: 800; color: #047857;'>{sp_conf:.1f}%</div>
-                                    <div><span class='{sp_class}'>{sp_verdict}</span></div>
+                                <div style='margin-top: 10px; margin-bottom: 15px;'>
+                                    <span class='diagnostic-chip'>Input Mode: Written / Typed</span>
+                                    <span class='diagnostic-chip'>Word Count: {words_cnt_main} words</span>
                                 </div>
                                 """,
                                 unsafe_allow_html=True,
                             )
-
-                        words_cnt_main = len(ans.get("answer_text", "").split()) if ans.get("answer_text") else 0
-                        sem_depth_main = ans.get("semantic_depth", 0.0) or 0.0
-                        kb_phrases_main = ans.get("keybert_keyphrases", "")
-                        st.markdown("#### 🗣️ KeyBERT & Speech Delivery Diagnostics:")
-                        st.markdown(
-                            f"""
-                            <span class='diagnostic-chip'>Words: {words_cnt_main}</span>
-                            <span class='diagnostic-chip'>Fillers: {ans.get('filler_count', 0)} ({ans.get('filler_density', 0.0):.1f}%)</span>
-                            <span class='diagnostic-chip'>Hedging Phrases: {ans.get('hedging_count', 0)}</span>
-                            <span class='diagnostic-chip' style='background:#E0E7FF; color:#3730A3;'>KeyBERT Semantic Depth: {sem_depth_main:.4f}</span>
-                            <span class='diagnostic-chip'>Lexical Diversity: {ans.get('lexical_diversity', 0.0):.2f}</span>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                        if kb_phrases_main:
-                            st.markdown(f"**KeyBERT Keyphrases (Cosine Relevance):** `{kb_phrases_main}`")
-
-                        with st.expander("🤖 ML Model Architecture & Confusion Matrix (Meta Model Stacking)"):
-                            c_m1, c_m2, c_m3 = st.columns(3)
-                            c_m1.metric("Test Accuracy", "88.24%")
-                            c_m2.metric("Precision", "0.8782")
-                            c_m3.metric("Recall", "0.8879")
-                            st.caption("Architecture: StackingClassifier (Logistic Regression + Random Forest + WrappedXGBoost with LR Meta-Learner) trained on 100,000 balanced interview samples.")
-                            st.markdown(
-                                """
-                                | Ground Truth | Predicted: Good | Predicted: Needs Improvement |
-                                | :--- | :---: | :---: |
-                                | **Actual: Good** | **8,879** | 1,121 |
-                                | **Actual: Needs Improvement** | 1,231 | **8,769** |
-                                """
-                            )
-                        if ans.get("speech_feedback"):
-                            st.info(f"💡 **Coaching Advice:** {ans['speech_feedback']}")
 
                         if ans.get("technical_feedback"):
                             with st.expander("📖 View Full Technical Rubric Breakdown & Ideal Answer", expanded=True):
@@ -983,7 +1052,7 @@ elif menu == "🎯 Take Interview":
                 col_p, col_j, col_n = st.columns([1, 2, 1])
                 with col_p:
                     if curr_idx > 0:
-                        if st.button("⬅️ Previous Question", use_container_width=True):
+                        if st.button("⬅️ Previous Question", use_container_width=True, key=f"btn_prev_nav_{active_id}_{curr_idx}"):
                             st.session_state.current_question_index -= 1
                             prev_q_id = questions[curr_idx - 1]["id"]
                             st.session_state[f"turn_mode_{active_id}_{prev_q_id}"] = "main"
@@ -1009,7 +1078,7 @@ elif menu == "🎯 Take Interview":
                         "Jump to question:",
                         q_labels,
                         index=curr_idx,
-                        key="jump_q_select",
+                        key=f"jump_q_select_{active_id}_{curr_idx}",
                     )
                     target_idx = q_labels.index(selected_q_label)
                     if target_idx != curr_idx:
@@ -1024,14 +1093,17 @@ elif menu == "🎯 Take Interview":
 
                 with col_n:
                     if curr_idx < total_q - 1:
-                        if st.button("Next Question ➡️", use_container_width=True):
-                            st.session_state.current_question_index += 1
-                            nxt_q_id = questions[curr_idx + 1]["id"]
-                            nxt_ans = questions[curr_idx + 1].get("answer")
-                            if nxt_ans and nxt_ans.get("follow_up_question") and not nxt_ans.get("follow_up_answer"):
-                                st.session_state[f"turn_mode_{active_id}_{nxt_q_id}"] = "follow_up"
-                            else:
-                                st.session_state[f"turn_mode_{active_id}_{nxt_q_id}"] = "main"
+                        if st.button("Next Question ➡️", use_container_width=True, key=f"btn_next_nav_{active_id}_{curr_idx}"):
+                            int_ok, fresh_sess = api.get_interview_detail(st.session_state.token, active_id)
+                            fresh_qs = fresh_sess.get("questions", []) if int_ok else []
+                            st.session_state.current_question_index = curr_idx + 1
+                            if len(fresh_qs) > curr_idx + 1:
+                                nxt_q_id = fresh_qs[curr_idx + 1]["id"]
+                                nxt_ans = fresh_qs[curr_idx + 1].get("answer")
+                                if nxt_ans and nxt_ans.get("follow_up_question") and not nxt_ans.get("follow_up_answer"):
+                                    st.session_state[f"turn_mode_{active_id}_{nxt_q_id}"] = "follow_up"
+                                else:
+                                    st.session_state[f"turn_mode_{active_id}_{nxt_q_id}"] = "main"
                             st.rerun()
 
                 st.write("---")
@@ -1081,20 +1153,28 @@ elif menu == "📜 Interview History":
                         st.markdown(f"**Q{q['order']}: {q['question_text']}**")
                         if ans_obj:
                             st.markdown(f"> 💬 **Submitted Answer:** {ans_obj.get('answer_text')}")
-                            c_sc1, c_sc2 = st.columns(2)
-                            with c_sc1:
-                                t_sc = ans_obj.get("technical_score")
-                                st.write(f"🎯 **Technical Score:** `{t_sc if t_sc is not None else 'N/A'}/10` ({ans_obj.get('technical_verdict', '-')})")
-                            with c_sc2:
-                                st.write(f"🗣️ **Speech Delivery:** `{ans_obj.get('speech_verdict', '-')}` (Fillers: `{ans_obj.get('filler_density', 0.0):.1f}%`)")
+                            is_voice_history = bool(ans_obj.get("audio_path"))
+                            if is_voice_history:
+                                c_sc1, c_sc2 = st.columns(2)
+                                with c_sc1:
+                                    t_sc = ans_obj.get("technical_score")
+                                    st.write(f"🎯 **Technical Score:** `{t_sc if t_sc is not None else 'N/A'}/10` ({ans_obj.get('technical_verdict', '-')})")
+                                with c_sc2:
+                                    st.write(f"🗣️ **Speech Delivery:** `{ans_obj.get('speech_verdict', '-')}` (Fillers: `{ans_obj.get('filler_density', 0.0):.1f}%`)")
 
-                            if ans_obj.get("speech_feedback"):
-                                st.caption(f"Speech feedback: {ans_obj.get('speech_feedback')}")
+                                if ans_obj.get("speech_feedback"):
+                                    st.caption(f"Speech feedback: {ans_obj.get('speech_feedback')}")
+                            else:
+                                t_sc = ans_obj.get("technical_score")
+                                st.write(f"🎯 **Technical Score:** `{t_sc if t_sc is not None else 'N/A'}/10` ({ans_obj.get('technical_verdict', '-')}) &nbsp;*(Typed Answer)*")
                             if ans_obj.get("follow_up_question"):
                                 st.markdown(f"**Follow-up Question:** *{ans_obj.get('follow_up_question')}*")
                                 if ans_obj.get("follow_up_answer"):
                                     st.markdown(f"> **Follow-up Answer:** {ans_obj.get('follow_up_answer')}")
-                                    st.caption(f"Follow-up feedback: {ans_obj.get('follow_up_feedback', '')}")
+                                    fu_sc = ans_obj.get("follow_up_score")
+                                    fu_vd = ans_obj.get("follow_up_verdict", "Resolved")
+                                    fu_score_badge = f" • Score: `{fu_sc:.1f}/10` ({fu_vd})" if fu_sc is not None else ""
+                                    st.caption(f"Follow-up feedback: {ans_obj.get('follow_up_feedback', '')}{fu_score_badge}")
                         else:
                             st.caption("*No answer submitted*")
                         st.divider()

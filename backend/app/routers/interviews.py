@@ -45,6 +45,7 @@ def _format_interview_response(session: InterviewSession) -> dict:
         "started_at": session.started_at,
         "completed_at": session.completed_at,
         "current_question_number": session.current_question_number,
+        "target_question_count": getattr(session, "target_question_count", 3) or 3,
     }
 
 
@@ -65,6 +66,8 @@ def _format_interview_question(iq: InterviewQuestion) -> dict:
             "follow_up_question": ans.follow_up_question,
             "follow_up_answer": ans.follow_up_answer,
             "follow_up_feedback": ans.follow_up_feedback,
+            "follow_up_score": getattr(ans, "follow_up_score", None),
+            "follow_up_verdict": getattr(ans, "follow_up_verdict", None),
             "speech_verdict": ans.speech_verdict,
             "speech_confidence": ans.speech_confidence,
             "filler_count": ans.filler_count,
@@ -87,6 +90,110 @@ def _format_interview_question(iq: InterviewQuestion) -> dict:
         "is_answered": iq.answer is not None,
         "answer": ans_data,
     }
+
+
+def _maybe_generate_next_rag_question(
+    session: InterviewSession,
+    current_iq: InterviewQuestion,
+    db: Session,
+):
+    """
+    Dynamically generates the next adaptive question along the gradual rubric ladder.
+    Adjusts the difficulty level and content based on previous rounds, scores, and misconceptions.
+    """
+    if getattr(session, "generation_mode", "CURATED") != "RAG_DYNAMIC":
+        return
+
+    target_total = getattr(session, "target_question_count", 3) or 3
+    next_order = current_iq.order + 1
+    if next_order > target_total:
+        return
+
+    # Check if question for next_order already exists
+    existing = (
+        db.query(InterviewQuestion)
+        .filter(
+            InterviewQuestion.interview_id == session.id,
+            InterviewQuestion.order == next_order,
+        )
+        .first()
+    )
+    if existing:
+        return
+
+    from app.services.rag_service import get_offline_store, get_github_retriever, get_gfg_retriever
+    from app.rag.interviewer.question_generator import normalize_topic_query
+    from app.rag.interviewer.rubric_engine import generate_adaptive_next_question
+
+    topic_name = session.custom_topic or (session.topic.name if session.topic else (session.subject.name if session.subject else "General"))
+    normalized_topic = normalize_topic_query(topic_name)
+
+    # Search RAG store for reference context
+    store = get_offline_store()
+    search_res = store.search_offline(normalized_topic, top_k=4)
+    context_str = ""
+    if search_res.get("matched") and search_res.get("results"):
+        context_str = "\n\n".join([r["chunk"]["text"] for r in search_res["results"][:3]])
+    else:
+        try:
+            gh = get_github_retriever()
+            gfg = get_gfg_retriever()
+            gh_chunks = gh.search_and_extract_chunks(normalized_topic)
+            gfg_chunks = gfg.search_and_extract_chunks(normalized_topic)
+            context_str = "\n\n".join([c.get("text", "") for c in (gh_chunks + gfg_chunks)[:3]])
+        except Exception:
+            context_str = f"Topic: {normalized_topic}"
+
+    # Build history of previous rounds for dynamic adaptation
+    all_iqs = (
+        db.query(InterviewQuestion)
+        .filter(InterviewQuestion.interview_id == session.id)
+        .order_by(InterviewQuestion.order.asc())
+        .all()
+    )
+    history = []
+    for prev in all_iqs:
+        if prev.answer:
+            history.append({
+                "order": prev.order,
+                "question": prev.question.question_text if prev.question else "",
+                "candidate_answer": prev.answer.answer_text or "",
+                "technical_score": prev.answer.technical_score or 5.0,
+                "technical_verdict": prev.answer.technical_verdict or "",
+                "misconception": prev.answer.misconception or "None",
+            })
+
+    try:
+        next_q_text, next_diff = generate_adaptive_next_question(
+            topic=normalized_topic,
+            target_order=next_order,
+            total_questions=target_total,
+            interview_history=history,
+            reference_context=context_str,
+        )
+    except Exception as e:
+        print(f"[WARN] Error in generate_adaptive_next_question: {e}")
+        from app.rag.interviewer.rubric_engine import get_rubric_stage
+        stage = get_rubric_stage(next_order, target_total)
+        next_q_text = stage["fallback_template"].format(topic=normalized_topic)
+        next_diff = stage["difficulty"]
+
+    new_q = Question(
+        subject_id=session.subject_id,
+        topic_id=session.topic_id,
+        question_text=next_q_text,
+        difficulty=next_diff,
+    )
+    db.add(new_q)
+    db.flush()
+
+    new_iq = InterviewQuestion(
+        interview_id=session.id,
+        question_id=new_q.id,
+        order=next_order,
+    )
+    db.add(new_iq)
+    session.current_question_number = next_order
 
 
 @router.post("", response_model=InterviewResponse, status_code=status.HTTP_201_CREATED)
@@ -123,41 +230,50 @@ def start_interview(
             status="IN_PROGRESS",
             started_at=datetime.utcnow(),
             current_question_number=1,
+            target_question_count=max(1, min(payload.question_count or 3, 5)),
         )
         db.add(session)
         db.flush()
 
-        # Dynamically generate 1 to 5 targeted RAG questions in one fast batch
-        num_q = max(1, min(payload.question_count or 3, 5))
-        generated_questions = []
+        # Retrieve RAG reference context for target_topic
+        from app.services.rag_service import get_offline_store, get_github_retriever, get_gfg_retriever
+        from app.rag.interviewer.question_generator import normalize_topic_query
+        from app.rag.interviewer.rubric_engine import generate_initial_rubric_question
 
-        try:
-            q_texts = generate_rag_questions_batch(target_topic, count=num_q)
-        except Exception as e:
-            print(f"[WARN] Dynamic RAG batch generation fallback: {e}")
-            q_texts = [
-                f"Explain the core mechanisms, performance characteristics, and time/space complexity of {target_topic} (Part {i+1})."
-                for i in range(num_q)
-            ]
+        store = get_offline_store()
+        normalized_topic = normalize_topic_query(target_topic)
+        search_res = store.search_offline(normalized_topic, top_k=4)
+        context_str = ""
+        if search_res.get("matched") and search_res.get("results"):
+            context_str = "\n\n".join([r["chunk"]["text"] for r in search_res["results"][:3]])
+        else:
+            try:
+                gh = get_github_retriever()
+                gfg = get_gfg_retriever()
+                gh_chunks = gh.search_and_extract_chunks(normalized_topic)
+                gfg_chunks = gfg.search_and_extract_chunks(normalized_topic)
+                context_str = "\n\n".join([c.get("text", "") for c in (gh_chunks + gfg_chunks)[:3]])
+            except Exception as e:
+                context_str = f"Topic: {normalized_topic}"
 
-        for q_text in q_texts:
-            q = Question(
-                subject_id=payload.subject_id,
-                topic_id=payload.topic_id,
-                question_text=q_text,
-                difficulty="MEDIUM",
-            )
-            db.add(q)
-            db.flush()
-            generated_questions.append(q)
+        # Generate Question 1: ALWAYS Basic / Easy (Foundational Intuition)
+        q1_text, q1_diff = generate_initial_rubric_question(normalized_topic, context_str)
 
-        for idx, q in enumerate(generated_questions):
-            iq = InterviewQuestion(
-                interview_id=session.id,
-                question_id=q.id,
-                order=idx + 1,
-            )
-            db.add(iq)
+        q1 = Question(
+            subject_id=payload.subject_id,
+            topic_id=payload.topic_id,
+            question_text=q1_text,
+            difficulty=q1_diff,
+        )
+        db.add(q1)
+        db.flush()
+
+        iq1 = InterviewQuestion(
+            interview_id=session.id,
+            question_id=q1.id,
+            order=1,
+        )
+        db.add(iq1)
 
         db.commit()
         db.refresh(session)
@@ -249,6 +365,18 @@ def get_interview(
             detail="Interview not found",
         )
 
+    if getattr(session, "generation_mode", "CURATED") == "RAG_DYNAMIC" and session.status != "COMPLETED":
+        latest_iq = (
+            db.query(InterviewQuestion)
+            .filter(InterviewQuestion.interview_id == session.id)
+            .order_by(InterviewQuestion.order.desc())
+            .first()
+        )
+        if latest_iq and latest_iq.answer and latest_iq.order < (session.target_question_count or 3):
+            _maybe_generate_next_rag_question(session, latest_iq, db)
+            db.commit()
+            db.refresh(session)
+
     response_data = _format_interview_response(session)
     response_data["questions"] = [
         _format_interview_question(iq) for iq in session.interview_questions
@@ -331,21 +459,24 @@ def submit_answer(
     topic_name = session.custom_topic or (session.topic.name if session.topic else (session.subject.name if session.subject else "General"))
     question_text = iq.question.question_text if iq.question else ""
 
-    # Run Integrated Evaluation (Technical RAG + Speech ML/Diagnostics)
+    # Run Integrated Evaluation (Technical RAG only for typed answer)
     eval_res = evaluate_submission(
         topic=topic_name,
         question=question_text,
         answer_text=payload.answer_text,
+        audio_path=None,
     )
 
     answer = db.query(Answer).filter(Answer.interview_question_id == iq.id).first()
     if answer:
         answer.answer_text = eval_res["answer_text"]
+        answer.audio_path = None
         answer.submitted_at = datetime.utcnow()
     else:
         answer = Answer(
             interview_question_id=iq.id,
             answer_text=eval_res["answer_text"],
+            audio_path=None,
             submitted_at=datetime.utcnow(),
         )
         db.add(answer)
@@ -357,18 +488,18 @@ def submit_answer(
     answer.misconception = eval_res["misconception"]
     answer.follow_up_question = eval_res["follow_up_question"]
 
-    # Populate Speech Delivery Evaluation
-    answer.speech_verdict = eval_res["speech_verdict"]
-    answer.speech_confidence = eval_res["speech_confidence"]
-    answer.filler_count = eval_res["filler_count"]
-    answer.filler_density = eval_res["filler_density"]
-    answer.hedging_count = eval_res["hedging_count"]
-    answer.technical_keyword_count = eval_res["technical_keyword_count"]
-    answer.technical_density = eval_res["technical_density"]
-    answer.lexical_diversity = eval_res["lexical_diversity"]
-    answer.speech_feedback = eval_res["speech_feedback"]
-    answer.semantic_depth = eval_res.get("semantic_depth", 0.0)
-    answer.keybert_keyphrases = eval_res.get("keybert_keyphrases", "")
+    # When student types the answer, DO NOT populate speech/communication metrics
+    answer.speech_verdict = None
+    answer.speech_confidence = None
+    answer.filler_count = None
+    answer.filler_density = None
+    answer.hedging_count = None
+    answer.technical_keyword_count = None
+    answer.technical_density = None
+    answer.lexical_diversity = None
+    answer.speech_feedback = None
+    answer.semantic_depth = None
+    answer.keybert_keyphrases = None
 
     # Update overall score on session
     all_answers = (
@@ -383,6 +514,9 @@ def submit_answer(
 
     if iq.order >= session.current_question_number:
         session.current_question_number = iq.order + 1
+
+    # Adaptively generate next rubric question if RAG_DYNAMIC
+    _maybe_generate_next_rag_question(session, iq, db)
 
     db.commit()
     db.refresh(answer)
@@ -505,6 +639,9 @@ def submit_audio_answer(
     if iq.order >= session.current_question_number:
         session.current_question_number = iq.order + 1
 
+    # Adaptively generate next rubric question if RAG_DYNAMIC
+    _maybe_generate_next_rag_question(session, iq, db)
+
     db.commit()
     db.refresh(answer)
     return answer
@@ -569,6 +706,11 @@ def submit_follow_up(
 
     answer.follow_up_answer = payload.follow_up_answer.strip()
     answer.follow_up_feedback = fb_res.get("feedback", "Follow-up response evaluated.")
+    answer.follow_up_score = fb_res.get("score", 7.5)
+    answer.follow_up_verdict = fb_res.get("verdict", "Resolved")
+
+    # Check and generate next adaptive question if not yet generated
+    _maybe_generate_next_rag_question(session, iq, db)
 
     db.commit()
     db.refresh(answer)
@@ -652,6 +794,11 @@ def submit_follow_up_audio(
 
     answer.follow_up_answer = transcribed_text.strip()
     answer.follow_up_feedback = fb_res.get("feedback", "Follow-up response evaluated.")
+    answer.follow_up_score = fb_res.get("score", 7.5)
+    answer.follow_up_verdict = fb_res.get("verdict", "Resolved")
+
+    # Check and generate next adaptive question if not yet generated
+    _maybe_generate_next_rag_question(session, iq, db)
 
     db.commit()
     db.refresh(answer)

@@ -34,6 +34,8 @@ class AnswerResponse(BaseModel):
     follow_up_question: Optional[str] = None
     follow_up_answer: Optional[str] = None
     follow_up_feedback: Optional[str] = None
+    follow_up_score: Optional[float] = None
+    follow_up_verdict: Optional[str] = None
 
     # Speech Delivery Evaluation
     speech_verdict: Optional[str] = None
@@ -79,6 +81,7 @@ class InterviewResponse(BaseModel):
     started_at: datetime
     completed_at: Optional[datetime] = None
     current_question_number: int
+    target_question_count: Optional[int] = 3
 
     class Config:
         from_attributes = True

@@ -278,6 +278,8 @@ def evaluate_follow_up(
         reference_context=reference_context,
     )
     return {
+        "score": getattr(fb, "score", 7.5),
+        "verdict": getattr(fb, "verdict", "Resolved"),
         "feedback": fb.feedback,
         "next_follow_up": fb.next_follow_up,
     }

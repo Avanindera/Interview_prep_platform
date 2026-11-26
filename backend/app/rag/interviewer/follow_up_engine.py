@@ -15,10 +15,12 @@ from app.rag.interviewer.gemini_client import call_gemini
 
 
 class FollowUpFeedback(str):
-    """String subclass that preserves string compatibility while providing precomputed next follow-up."""
-    def __new__(cls, feedback: str, next_follow_up: str = ""):
+    """String subclass that preserves string compatibility while providing score and precomputed next follow-up."""
+    def __new__(cls, feedback: str, score: float = 7.5, verdict: str = "Resolved", next_follow_up: str = ""):
         obj = super().__new__(cls, feedback)
         obj.feedback = feedback
+        obj.score = score
+        obj.verdict = verdict
         obj.next_follow_up = next_follow_up
         return obj
 
@@ -78,10 +80,10 @@ def evaluate_follow_up_answer(
     reference_context: str
 ) -> FollowUpFeedback:
     """
-    Evaluates the candidate's answer to the follow-up question and proactively
-    synthesizes the next follow-up probe to eliminate turn latency.
+    Evaluates the candidate's answer to the follow-up question, produces a numerical score and verdict,
+    and proactively synthesizes feedback.
     """
-    prompt = f"""You are a Senior Technical Interviewer evaluating a candidate's follow-up response.
+    prompt = f"""You are a Senior Technical Interviewer evaluating a candidate's response to an adaptive follow-up probe.
 
 TOPIC:
 {topic}
@@ -95,10 +97,20 @@ CANDIDATE'S RESPONSE:
 REFERENCE CONTEXT:
 {reference_context}
 
-FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
+EVALUATION RUBRIC:
+- Score the candidate's response out of 10.0 based on conceptual accuracy, correctness of invariant explanation, and clarity.
+  - 8.5 - 10.0: Fully Resolved / Excellent explanation
+  - 6.5 - 8.4: Partially Resolved / Core idea present but minor details missing
+  - 1.0 - 6.4: Still Needs Work / Incorrect reasoning or persistent misconception
+- Set Verdict to one of: Resolved, Partially Resolved, Still Needs Work.
+
+FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS (DO NOT DEVIATE):
+
+Score: [e.g. 8.5]
+Verdict: [Resolved | Partially Resolved | Still Needs Work]
 
 Feedback:
-1. State whether their understanding is now clear (Resolved / Partially Resolved / Still Needs Work).
+1. State whether their understanding is now clear.
 2. Give a brief, constructive explanation of the correct concept.
 3. Keep the feedback under 4 bullet points.
 
@@ -107,12 +119,32 @@ Next Follow-up Question:
 """
     raw = call_gemini(prompt)
 
+    score_match = re.search(r"Score:\s*([0-9]+(?:\.[0-9]+)?)", raw, re.IGNORECASE)
+    verdict_match = re.search(r"Verdict:\s*([A-Za-z\s]+)", raw, re.IGNORECASE)
     next_match = re.search(r"Next Follow-up Question:\s*\n*([^\n].*?)(?:\Z)", raw, re.DOTALL | re.IGNORECASE)
     fb_match = re.search(r"Feedback:\s*(.*?)(?=(?:Next Follow-up Question|\Z))", raw, re.DOTALL | re.IGNORECASE)
+
+    score_val = 7.5
+    if score_match:
+        try:
+            score_val = float(score_match.group(1))
+            score_val = max(1.0, min(10.0, score_val))
+        except ValueError:
+            score_val = 7.5
+
+    verdict_val = "Resolved" if score_val >= 7.5 else ("Partially Resolved" if score_val >= 6.0 else "Still Needs Work")
+    if verdict_match:
+        parsed_verdict = verdict_match.group(1).strip()
+        if any(w in parsed_verdict.lower() for w in ["partially", "partial"]):
+            verdict_val = "Partially Resolved"
+        elif any(w in parsed_verdict.lower() for w in ["needs work", "incorrect", "unresolved"]):
+            verdict_val = "Still Needs Work"
+        elif "resolved" in parsed_verdict.lower() or "correct" in parsed_verdict.lower():
+            verdict_val = "Resolved"
 
     feedback_text = fb_match.group(1).strip() if fb_match else raw
     next_q = next_match.group(1).strip() if next_match else ""
     if next_q.lower() in {"n/a", "none", "n/a.", "none."}:
         next_q = ""
 
-    return FollowUpFeedback(feedback_text, next_follow_up=next_q)
+    return FollowUpFeedback(feedback_text, score=score_val, verdict=verdict_val, next_follow_up=next_q)
